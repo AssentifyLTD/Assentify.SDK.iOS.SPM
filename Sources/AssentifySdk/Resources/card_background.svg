@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920">
+  <defs>
+    <style>
+      .overlay {
+        fill: #66FFFFFF;
+        opacity: .50;
+        fill-rule: evenodd;
+      }
+      .scanArea {
+        fill: #FFFFFF;
+        opacity: .90;
+      }
+      .corner {
+        fill: none;
+        stroke: #000000;
+        stroke-width: 16;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+
+  <!-- Background overlay with hole -->
+  <path class="overlay"
+        d="M0 0H1080V1920H0Z
+           M60 685
+           a45 45 0 0 1 45 -45
+           h870
+           a45 45 0 0 1 45 45
+           v550
+           a45 45 0 0 1 -45 45
+           h-870
+           a45 45 0 0 1 -45 -45
+           z"/>
+
+  <!-- Scan area -->
+  <rect
+      id="scanArea"
+      class="scanArea"
+      x="60"
+      y="640"
+      width="960"
+      height="640"
+      rx="45"
+      ry="45"/>
+
+  <!-- Top left -->
+  <path
+      id="corner_1"
+      class="corner"
+      d="M180 660H105
+         a30 30 0 0 0 -30 30
+         V760"/>
+
+  <!-- Top right -->
+  <path
+      id="corner_2"
+      class="corner"
+      d="M900 660H975
+         a30 30 0 0 1 30 30
+         V760"/>
+
+  <!-- Bottom left -->
+  <path
+      id="corner_3"
+      class="corner"
+      d="M180 1260H105
+         a30 30 0 0 1 -30 -30
+         V1160"/>
+
+  <!-- Bottom right -->
+  <path
+      id="corner_4"
+      class="corner"
+      d="M900 1260H975
+         a30 30 0 0 0 30 -30
+         V1160"/>
+</svg>

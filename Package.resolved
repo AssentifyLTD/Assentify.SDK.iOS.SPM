@@ -1,0 +1,86 @@
+{
+  "pins" : [
+    {
+      "identity" : "bugsnag-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/bugsnag/bugsnag-cocoa.git",
+      "state" : {
+        "revision" : "7f57276b282dde418e602a8cc02a6a1e22993aae",
+        "version" : "6.36.0"
+      }
+    },
+    {
+      "identity" : "bugsnag-cocoa-performance",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/bugsnag/bugsnag-cocoa-performance.git",
+      "state" : {
+        "revision" : "df55a0a85889a1c559012cedaffb8dc6f014005c",
+        "version" : "2.0.0"
+      }
+    },
+    {
+      "identity" : "cocoalumberjack",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CocoaLumberjack/CocoaLumberjack.git",
+      "state" : {
+        "revision" : "c5f2ed4d219866117e135cf648180dc7b66739d3",
+        "version" : "3.9.1"
+      }
+    },
+    {
+      "identity" : "nfcpassportreader",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AndyQ/NFCPassportReader.git",
+      "state" : {
+        "revision" : "c1d8dab53bc7af2d579e846d9e48acc1883661a2",
+        "version" : "2.1.0"
+      }
+    },
+    {
+      "identity" : "openssl",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/krzyzanowskim/OpenSSL.git",
+      "state" : {
+        "revision" : "8cb1d641ab5ebce2cd7cf31c93baef07bed672d4",
+        "version" : "1.1.2301"
+      }
+    },
+    {
+      "identity" : "svgkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SVGKit/SVGKit.git",
+      "state" : {
+        "revision" : "58152b9f7c85eab239160b36ffdfd364aa43d666",
+        "version" : "3.0.0"
+      }
+    },
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log",
+      "state" : {
+        "revision" : "a878e7f8f46cfc0e1125e565b5c08e7d5272dc9a",
+        "version" : "1.14.0"
+      }
+    },
+    {
+      "identity" : "tensorflowlitec",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kewlbear/TensorFlowLiteC.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "d4cb1f268ce037754cda9a291e6b31091e1b9912"
+      }
+    },
+    {
+      "identity" : "tensorflowliteswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kewlbear/TensorFlowLiteSwift.git",
+      "state" : {
+        "branch" : "master",
+        "revision" : "bb9bd9c7c86e882f17aaf8bac35e96c77264eee2"
+      }
+    }
+  ],
+  "version" : 2
+}

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920">
+
+  <defs>
+    <style>
+      .overlay {
+        fill: #66FFFFFF;
+        opacity: .50;
+        fill-rule: evenodd;
+      }
+
+      .corner {
+        fill: none;
+        stroke: #FFD54A;
+        stroke-width: 5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .boxStroke {
+        fill: none;
+        stroke: #FFD54A;
+        stroke-width: 3.5;
+        stroke-linejoin: round;
+      }
+
+      .topBoxFill { fill: #66FFFFFF; }
+      .infoBoxFill { fill: #55FFFFFF; }
+
+      .faceStroke {
+        fill: none;
+        stroke: #FFFFFF;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .mrzFill { fill: #D9D9D9; }
+    </style>
+  </defs>
+
+  <!-- Overlay -->
+  <path class="overlay"
+        d="M0,0H1080V1920H0Z
+           M82,489
+           V367
+           A30,30 0 0 1 112,337
+           H250
+           H830
+           H968
+           A30,30 0 0 1 998,367
+           V489
+           V1443
+           V1565
+           A30,30 0 0 1 968,1595
+           H830
+           H250
+           H112
+           A30,30 0 0 1 82,1565
+           V1443
+           Z" />
+
+  <!-- Outer passport frame -->
+  <g id="passport_frame" transform="translate(70,330) scale(2.93,2.65)">
+
+    <!-- Outer corners -->
+    <path id="outer_corner_1"
+          class="corner"
+          d="M4,60 V14 A10,10 0 0 1 14,4 H60"/>
+
+    <path id="outer_corner_2"
+          class="corner"
+          d="M260,4 H306 A10,10 0 0 1 316,14 V60"/>
+
+    <path id="outer_corner_3"
+          class="corner"
+          d="M4,420 V466 A10,10 0 0 0 14,476 H60"/>
+
+    <path id="outer_corner_4"
+          class="corner"
+          d="M260,476 H306 A10,10 0 0 0 316,466 V420"/>
+
+    <!-- Inner content:
+         - translateX(16) keeps scaleX centered
+         - translateY(-22) centers vertically better
+         - scaleX(0.90) adds horizontal padding -->
+    <g id="passport_inner_content" transform="translate(16,-22) scale(0.90,1)">
+
+      <path id="passport_top_box"
+            class="topBoxFill boxStroke"
+            d="M25,75
+               H295
+               Q305,75 305,85
+               V225
+               Q305,235 295,235
+               H25
+               Q15,235 15,225
+               V85
+               Q15,75 25,75 Z"/>
+
+      <path id="passport_info_box"
+            class="infoBoxFill boxStroke"
+            d="M25,255
+               H295
+               Q305,255 305,265
+               V375
+               Q305,385 295,385
+               H25
+               Q15,385 15,375
+               V265
+               Q15,255 25,255 Z"/>
+
+      <path id="passport_photo_frame"
+            class="boxStroke"
+            d="M50,285
+               H110
+               Q120,285 120,295
+               V345
+               Q120,355 110,355
+               H50
+               Q40,355 40,345
+               V295
+               Q40,285 50,285 Z"/>
+
+      <path id="passport_face_head"
+            class="faceStroke"
+            d="M80,302
+               m-10,0
+               a10,10 0 1,1 20,0
+               a10,10 0 1,1 -20,0"/>
+
+      <path id="passport_face_body"
+            class="faceStroke"
+            d="M64,335 Q80,320 96,335"/>
+
+      <path id="passport_mrz_box"
+            class="topBoxFill boxStroke"
+            d="M25,400
+               H295
+               Q305,400 305,410
+               V440
+               Q305,450 295,450
+               H25
+               Q15,450 15,440
+               V410
+               Q15,400 25,400 Z"/>
+
+      <path id="passport_mrz_row_1"
+            class="mrzFill"
+            d="
+              M30,412 L36,416 L30,420 L33,420 L39,416 L33,412 Z
+              M40,412 L46,416 L40,420 L43,420 L49,416 L43,412 Z
+              M50,412 L56,416 L50,420 L53,420 L59,416 L53,412 Z
+              M60,412 L66,416 L60,420 L63,420 L69,416 L63,412 Z
+              M70,412 L76,416 L70,420 L73,420 L79,416 L73,412 Z
+              M80,412 L86,416 L80,420 L83,420 L89,416 L83,412 Z
+              M90,412 L96,416 L90,420 L93,420 L99,416 L93,412 Z
+              M100,412 L106,416 L100,420 L103,420 L109,416 L103,412 Z
+              M110,412 L116,416 L110,420 L113,420 L119,416 L113,412 Z
+              M120,412 L126,416 L120,420 L123,420 L129,416 L123,412 Z
+              M130,412 L136,416 L130,420 L133,420 L139,416 L133,412 Z
+              M140,412 L146,416 L140,420 L143,420 L149,416 L143,412 Z
+              M150,412 L156,416 L150,420 L153,420 L159,416 L153,412 Z
+              M160,412 L166,416 L160,420 L163,420 L169,416 L163,412 Z
+              M170,412 L176,416 L170,420 L173,420 L179,416 L173,412 Z
+              M180,412 L186,416 L180,420 L183,420 L189,416 L183,412 Z
+              M190,412 L196,416 L190,420 L193,420 L199,416 L193,412 Z
+              M200,412 L206,416 L200,420 L203,420 L209,416 L203,412 Z
+              M210,412 L216,416 L210,420 L213,420 L219,416 L213,412 Z
+              M220,412 L226,416 L220,420 L223,420 L229,416 L223,412 Z
+              M230,412 L236,416 L230,420 L233,420 L239,416 L233,412 Z
+              M240,412 L246,416 L240,420 L243,420 L249,416 L243,412 Z
+              M250,412 L256,416 L250,420 L253,420 L259,416 L253,412 Z
+              M260,412 L266,416 L260,420 L263,420 L269,416 L263,412 Z
+              M270,412 L276,416 L270,420 L273,420 L279,416 L273,412 Z"/>
+
+      <path id="passport_mrz_row_2"
+            class="mrzFill"
+            d="
+              M30,428 L36,432 L30,436 L33,436 L39,432 L33,428 Z
+              M40,428 L46,432 L40,436 L43,436 L49,432 L43,428 Z
+              M50,428 L56,432 L50,436 L53,436 L59,432 L53,428 Z
+              M60,428 L66,432 L60,436 L63,436 L69,432 L63,428 Z
+              M70,428 L76,432 L70,436 L73,436 L79,432 L73,428 Z
+              M80,428 L86,432 L80,436 L83,436 L89,432 L83,428 Z
+              M90,428 L96,432 L90,436 L93,436 L99,432 L93,428 Z
+              M100,428 L106,432 L100,436 L103,436 L109,432 L103,428 Z
+              M110,428 L116,432 L110,436 L113,436 L119,432 L113,428 Z
+              M120,428 L126,432 L120,436 L123,436 L129,432 L123,428 Z
+              M130,428 L136,432 L130,436 L133,436 L139,432 L133,428 Z
+              M140,428 L146,432 L140,436 L143,436 L149,432 L143,428 Z
+              M150,428 L156,432 L150,436 L153,436 L159,432 L153,428 Z
+              M160,428 L166,432 L160,436 L163,436 L169,432 L163,428 Z
+              M170,428 L176,432 L170,436 L173,436 L179,432 L173,428 Z
+              M180,428 L186,432 L180,436 L183,436 L189,432 L183,428 Z
+              M190,428 L196,432 L190,436 L193,436 L199,432 L193,428 Z
+              M200,428 L206,432 L200,436 L203,436 L209,432 L203,428 Z
+              M210,428 L216,432 L210,436 L213,436 L219,432 L213,428 Z
+              M220,428 L226,432 L220,436 L223,436 L229,432 L223,428 Z
+              M230,428 L236,432 L230,436 L233,436 L239,432 L233,428 Z
+              M240,428 L246,432 L240,436 L243,436 L249,432 L243,428 Z
+              M250,428 L256,432 L250,436 L253,436 L259,432 L253,428 Z
+              M260,428 L266,432 L260,436 L263,436 L269,432 L263,428 Z
+              M270,428 L276,432 L270,436 L273,436 L279,432 L273,428 Z"/>
+
+    </g>
+  </g>
+</svg>
