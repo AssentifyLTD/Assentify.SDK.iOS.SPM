@@ -15,7 +15,10 @@ let package = Package(
         .package(url: "https://github.com/bugsnag/bugsnag-cocoa-performance.git", from: "2.0.0"),
 
         // Unofficial SPM
-        .package(url: "https://github.com/kewlbear/TensorFlowLiteSwift.git", .branch("master"))
+        .package(
+            url: "https://github.com/AssentifyLTD/TensorFlowLiteSwift.git",
+            exact: "2.17.4"
+        )
     ],
     targets: [
         .target(

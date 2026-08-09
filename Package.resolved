@@ -68,17 +68,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kewlbear/TensorFlowLiteC.git",
       "state" : {
-        "branch" : "master",
-        "revision" : "d4cb1f268ce037754cda9a291e6b31091e1b9912"
+        "revision" : "fda49a28b407bff0ddf036a9bdb9828132bdc7f0",
+        "version" : "2.17.0"
       }
     },
     {
       "identity" : "tensorflowliteswift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/kewlbear/TensorFlowLiteSwift.git",
+      "location" : "https://github.com/AssentifyLTD/TensorFlowLiteSwift.git",
       "state" : {
-        "branch" : "master",
-        "revision" : "bb9bd9c7c86e882f17aaf8bac35e96c77264eee2"
+        "revision" : "ea9f356e8cb5ac576a86e98baf4a60face23cba1",
+        "version" : "2.17.4"
       }
     }
   ],
