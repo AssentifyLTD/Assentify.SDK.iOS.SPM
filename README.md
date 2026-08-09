@@ -1,6 +1,6 @@
 # AssentifySdk
 
-[![Version](https://img.shields.io/cocoapods/v/AssentifySdk.svg?style=flat)](https://cocoapods.org/pods/AssentifySdk)
+[![SPM Compatible](https://img.shields.io/badge/SPM-compatible-brightgreen.svg)](https://swift.org/package-manager/)
 [![License](https://img.shields.io/cocoapods/l/AssentifySdk.svg?style=flat)](https://cocoapods.org/pods/AssentifySdk)
 [![Platform](https://img.shields.io/cocoapods/p/AssentifySdk.svg?style=flat)](https://cocoapods.org/pods/AssentifySdk)
 
@@ -11,15 +11,57 @@
 ## Documentation 
 [Assentify Sdk Documentation](https://drive.google.com/file/d/1nd_KjBy-9NXs0-ub2YCb4YTlJW650Po3/view?usp=sharing)
 
+## Requirements
+
+- iOS 16.0+
+- Swift 5.7+
+
 ## Installation
 
-AssentifySdk is available through [CocoaPods](https://cocoapods.org). To install
-it, simply add the following line to your Podfile:
+AssentifySdk is available through [Swift Package Manager](https://swift.org/package-manager/).
 
-```ruby
-pod 'AssentifySdk'
+### Using Xcode
+
+1. Go to **File → Add Package Dependencies...**
+2. Enter the repository URL:
+   ```
+   https://github.com/AssentifyLTD/AssentifySdk.git
+   ```
+3. Choose the version rule (e.g. **Up to Next Major** or an **Exact** version)
+4. Add the `AssentifySdk` library to your target
+
+### Using Package.swift
+
+Add the following to your `Package.swift` dependencies:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/AssentifyLTD/Assentify.SDK.iOS.SPM.git", from: "1.0.0-Beta.19")
+]
 ```
-  
+
+Then add `AssentifySdk` to your target's dependencies:
+
+```swift
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: [
+            "AssentifySdk"
+        ]
+    )
+]
+```
+
+## Dependencies
+
+AssentifySdk pulls in the following packages automatically via SPM:
+
+- [SVGKit](https://github.com/SVGKit/SVGKit)
+- [NFCPassportReader](https://github.com/AndyQ/NFCPassportReader)
+- [Bugsnag](https://github.com/bugsnag/bugsnag-cocoa)
+- [BugsnagPerformance](https://github.com/bugsnag/bugsnag-cocoa-performance)
+- [TensorFlowLiteSwift](https://github.com/kewlbear/TensorFlowLiteSwift)
 
 ## Versions
 
