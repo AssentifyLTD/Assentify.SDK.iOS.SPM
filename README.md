@@ -25,7 +25,7 @@ AssentifySdk is available through [Swift Package Manager](https://swift.org/pack
 1. Go to **File → Add Package Dependencies...**
 2. Enter the repository URL:
    ```
-   https://github.com/AssentifyLTD/AssentifySdk.git
+   https://github.com/AssentifyLTD/Assentify.SDK.iOS.SPM.git
    ```
 3. Choose the version rule (e.g. **Up to Next Major** or an **Exact** version)
 4. Add the `AssentifySdk` library to your target
