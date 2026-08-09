@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/bugsnag/bugsnag-cocoa-performance.git", from: "2.0.0"),
 
         // Unofficial SPM
-        .package(url: "https://github.com/kewlbear/TensorFlowLiteSwift.git", exact: "2.6.0"),
+        .package(url: "https://github.com/kewlbear/TensorFlowLiteSwift.git", revision: "412bd55"),
     ],
     targets: [
         .target(

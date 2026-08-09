@@ -77,7 +77,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kewlbear/TensorFlowLiteSwift.git",
       "state" : {
-        "branch" : "2.6.0",
+        "branch" : "412bd55",
         "revision" : "412bd55eb1b9f9c711c3a20045d84e06c589f069"
       }
     }
