@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/bugsnag/bugsnag-cocoa-performance.git", from: "2.0.0"),
 
         // Unofficial SPM
-        .package(url: "https://github.com/kewlbear/TensorFlowLiteSwift.git", branch: "master"),
+        .package(url: "https://github.com/kewlbear/TensorFlowLiteSwift.git", branch: "2.6.0"),
     ],
     targets: [
         .target(
@@ -24,7 +24,7 @@ let package = Package(
                 "SVGKit",
                 "NFCPassportReader",
                 .product(name: "Bugsnag", package: "bugsnag-cocoa"),
-                .product(name: "BugsnagPerformance", package: "bugsnag-cocoa-performance"), // ← package name fixed
+                .product(name: "BugsnagPerformance", package: "bugsnag-cocoa-performance"),
                 .product(name: "TensorFlowLiteSwift", package: "TensorFlowLiteSwift"),
             ],
             resources: [
