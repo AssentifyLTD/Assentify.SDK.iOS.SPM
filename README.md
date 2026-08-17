@@ -13,7 +13,7 @@
 
 ## Requirements
 
-- iOS 16.0+
+- iOS 15.0+
 - Swift 5.7+
 
 ## Installation
@@ -64,6 +64,9 @@ AssentifySdk pulls in the following packages automatically via SPM:
 - [TensorFlowLiteSwift](https://github.com/kewlbear/TensorFlowLiteSwift)
 
 ## Versions
+
+**1.0.0-Beta.20**
+1.⁠ ⁠*iOS 15+ support.*
 
 **1.0.0-Beta.19**
 

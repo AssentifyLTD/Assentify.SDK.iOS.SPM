@@ -16,54 +16,75 @@ public struct TopBarBackLogoToolbar: ViewModifier {
         self.noStepper = noStepper
     }
 
+    /// Whether the back button + logo bar should be shown for this screen.
+    private var showsBar: Bool {
+        BaseTheme.stepperType == .normal || noStepper
+    }
+
     @ViewBuilder
     public func body(content: Content) -> some View {
-        content
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                if BaseTheme.stepperType == .normal || noStepper {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button(action: onBack) {
-                            Image(systemName: "chevron.backward")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Color(BaseTheme.baseTextColor))
-                                .padding(.vertical, 6)
-                                .contentShape(Rectangle())
-                        }
-                    }
+        if #available(iOS 16.0, *) {
+            content
+                .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    toolbarContent
                 }
-                if BaseTheme.stepperType == .normal || noStepper {
-                    ToolbarItem(placement: .principal) {
-                        AsyncImage(url: URL(string: logoUrl)) { phase in
-                            switch phase {
-                            case .success(let img):
-                                img.resizable().scaledToFit()
-                            default:
-                                Color.clear
-                            }
-                        }
-                        .frame(height: 28)
-                    }
+                .toolbar(showsBar ? .visible : .hidden, for: .navigationBar)
+        } else {
+            content
+                .navigationBarBackButtonHidden(true)
+                .toolbar {
+                    toolbarContent
                 }
-               
+                .navigationBarHidden(!showsBar)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarLeading) {
+            if showsBar {
+                backButton
             }
+        }
+        ToolbarItem(placement: .principal) {
+            if showsBar {
+                logoImage
+            }
+        }
+    }
+
+    private var backButton: some View {
+        Button(action: onBack) {
+            Image(systemName: "chevron.backward")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(Color(BaseTheme.baseTextColor))
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
+        }
+    }
+
+    private var logoImage: some View {
+        AsyncImage(url: URL(string: logoUrl)) { phase in
+            switch phase {
+            case .success(let img):
+                img.resizable().scaledToFit()
+            default:
+                Color.clear
+            }
+        }
+        .frame(height: 28)
     }
 }
 
 public extension View {
-    @ViewBuilder
     func topBarBackLogo(
         logoUrl: String = BaseTheme.baseLogo,
         noStepper: Bool = false,
         onBack: @escaping () -> Void
     ) -> some View {
-        if BaseTheme.stepperType == .normal || noStepper {
-            self.modifier(TopBarBackLogoToolbar(logoUrl: logoUrl, onBack: onBack, noStepper: noStepper)) .toolbar(.visible, for: .navigationBar)
-        } else {
-            self.navigationBarBackButtonHidden(true) .toolbar(.hidden, for: .navigationBar)
-        }
+        self.modifier(
+            TopBarBackLogoToolbar(logoUrl: logoUrl, onBack: onBack, noStepper: noStepper)
+        )
     }
 }
-
-
-
