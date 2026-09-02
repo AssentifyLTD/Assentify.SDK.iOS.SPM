@@ -84,6 +84,10 @@ public struct BaseTheme {
     public static var baseUiLanguage: String {
         AssentifySdkObject.shared.get()?.environmentalConditions?.flowUiLanguage ?? UiLanguage.English;
     }
+    
+    public static var localMrzScan: Bool {
+        env.localMrzScan
+    }
 }
 
 

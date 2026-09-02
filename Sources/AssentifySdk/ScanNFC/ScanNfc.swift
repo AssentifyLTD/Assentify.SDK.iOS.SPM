@@ -117,7 +117,7 @@ public class ScanNfc :LanguageTransformationDelegate{
             let faceImageData = Data(byteArray)
 
             let timestamp = Int(Date().timeIntervalSince1970)
-            let fileName = "face_\(timestamp).jpg"
+            let fileName = "face_\(timestamp)"
 
             uploadImage(
                 faceImageData: faceImageData,
