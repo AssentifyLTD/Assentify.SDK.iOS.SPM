@@ -180,6 +180,27 @@ public class AssentifySdk {
         return nil;
     }
     
+    public func startLocalScanPassport(scanPassportDelegate:ScanPassportDelegate,language: String = Language.NON,stepId: Int? = nil)->LocalScanPassport?{
+        if(isKeyValid){
+            let localScanPassport = LocalScanPassport(
+                configModel:self.configModel,
+                environmentalConditions:self.environmentalConditions!,
+                apiKey:self.apiKey,
+                scanPassportDelegate :scanPassportDelegate,
+                language:language,
+                
+            )
+            localScanPassport.setStepId(stepId)
+            return localScanPassport;
+            
+        }else{
+            NSException(name: NSExceptionName(rawValue: "Exception"), reason: "Invalid Keys", userInfo: nil).raise()
+        }
+        return nil;
+    }
+    
+    
+    
     public func startScanNfc(scanNfcDelegate:ScanNfcDelegate,language: String = Language.NON,stepId: Int? = nil)->ScanNfc?{
         if(isKeyValid){
             let scanNfc = ScanNfc(

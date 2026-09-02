@@ -10,7 +10,11 @@ public struct HowToCaptureScreen: View {
     }
     public func onNext() {
         if(isPassport){
-            self.flowController.push(PassportScanStep(flowController: self.flowController))
+            if(BaseTheme.localMrzScan){
+                self.flowController.push(LocalPassportScanStep(flowController: self.flowController))
+            }else{
+                self.flowController.push(PassportScanStep(flowController: self.flowController))
+            }
         }else{
             self.flowController.push(IDCardScanStep(flowController: self.flowController))
         }

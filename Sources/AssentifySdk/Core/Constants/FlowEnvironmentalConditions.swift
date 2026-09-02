@@ -149,6 +149,8 @@ public final class FlowEnvironmentalConditions {
     public let enableQr: Bool
     public let showCountDown: Bool
     public let blockLoaderCustomProperties: [String: Any]
+    
+    public let localMrzScan: Bool
 
     public init(
         backgroundType: BackgroundType,          // required like
@@ -168,7 +170,9 @@ public final class FlowEnvironmentalConditions {
         enableNfc: Bool = false,
         enableQr: Bool = false,
         showCountDown: Bool = true,
-        blockLoaderCustomProperties: [String: Any] = [:]
+        blockLoaderCustomProperties: [String: Any] = [:],
+        localMrzScan: Bool = false,
+
     ) {
         self.logoUrl = logoUrl
         self.svgBackgroundImageUrl = svgBackgroundImageUrl
@@ -190,5 +194,7 @@ public final class FlowEnvironmentalConditions {
         self.enableQr = enableQr
         self.showCountDown = showCountDown
         self.blockLoaderCustomProperties = blockLoaderCustomProperties
+        self.localMrzScan = localMrzScan
+
     }
 }

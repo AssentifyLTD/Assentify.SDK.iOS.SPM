@@ -107,3 +107,17 @@ public  func getCurrentDateTimeForTracking() -> String {
       ]
       return formatter.string(from: Date())
   }
+
+
+public struct MrzKeys {
+    
+    public  static let KEY_FIRST_NAME = "OnBoardMe_IdentificationDocumentCapture_name"
+    public  static let KEY_LAST_NAME = "OnBoardMe_IdentificationDocumentCapture_surname"
+    public  static let KEY_DOCUMENT_TYPE = "OnBoardMe_IdentificationDocumentCapture_Document_Type"
+    public  static let KEY_BIRTH_DATE = "OnBoardMe_IdentificationDocumentCapture_Birth_Date"
+    public  static let KEY_DOCUMENT_NUMBER = "OnBoardMe_IdentificationDocumentCapture_Document_Number"
+    public  static let KEY_SEX = "OnBoardMe_IdentificationDocumentCapture_Sex"
+    public  static let KEY_EXPIRY_DATE = "OnBoardMe_IdentificationDocumentCapture_Expiry_Date"
+    public  static let KEY_COUNTRY = "OnBoardMe_IdentificationDocumentCapture_Country"
+    public  static let KEY_NATIONALITY = "OnBoardMe_IdentificationDocumentCapture_Nationality"
+}
