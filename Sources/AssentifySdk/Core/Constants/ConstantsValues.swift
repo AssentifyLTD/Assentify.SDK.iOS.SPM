@@ -33,6 +33,8 @@ public struct StepsNames {
     public   static let identificationDocumentCapture = "IdentificationDocumentCapture"
     public   static let contextAwareSigning = "ContextAwareSigning"
     public   static let split = "Split"
+    public   static let dataRelay = "DataRelay"
+
 }
 
 public struct WrapUpKeys {

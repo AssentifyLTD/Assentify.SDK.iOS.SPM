@@ -54,6 +54,7 @@ public struct StepTypeDto: Codable {
 
 public struct Customization: Codable {
     public let header: String?
+    public let summaryMessage: String?
     public let subHeader: String?
     public let svgLogoUrl: String?
     public let file: String?
