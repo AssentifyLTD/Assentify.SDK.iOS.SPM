@@ -30,6 +30,8 @@ public struct SubmitStepScreen: View ,SubmitDataDelegate {
     @State private var submitDataTypes: String = SubmitDataTypes.none
 
     @State private var resetTick: Int = 0
+    @State private var submitTitle: String = FlowStrings.readyToSubmit
+    @State private var submitMessage: String = FlowStrings.swipeToConfirm
 
     public init(flowController: FlowController) {
         self.flowController = flowController
@@ -50,8 +52,8 @@ public struct SubmitStepScreen: View ,SubmitDataDelegate {
 
                         case SubmitDataTypes.none , SubmitDataTypes.onSend:
                             MiddleContent(
-                                title: FlowStrings.readyToSubmit,
-                                message: FlowStrings.swipeToConfirm,
+                                title: submitTitle,
+                                message: submitMessage,
                                 messageColor: Color(BaseTheme.baseTextColor)
                             )
                             
@@ -65,8 +67,8 @@ public struct SubmitStepScreen: View ,SubmitDataDelegate {
                        
                         default:
                             MiddleContent(
-                                title: FlowStrings.readyToSubmit,
-                                message: FlowStrings.swipeToConfirm,
+                                title: submitTitle,
+                                message: submitMessage,
                                 messageColor: Color(BaseTheme.baseTextColor)
                             )
                         }
@@ -103,9 +105,16 @@ public struct SubmitStepScreen: View ,SubmitDataDelegate {
 
             var wrapUp: SubmitRequestModel? = nil
             let initSteps = ConfigModelObject.shared.get()!.stepDefinitions
+            
+            let stepId = flowController.wrapUpStepID != -1
+                ? flowController.wrapUpStepID
+                : ConfigModelObject.shared.get()!.stepMap.last!.id
+            
 
             for item in initSteps {
-                if item.stepDefinition == StepsNames.wrapUp {
+                if item.stepId == stepId{
+                    self.submitTitle = item.customization.header!
+                    self.submitMessage = item.customization.summaryMessage!
 
                     var values: [String: String] = [:]
 

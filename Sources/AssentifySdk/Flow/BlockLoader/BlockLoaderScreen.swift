@@ -356,6 +356,28 @@ private func buildStepsFromConfig(flowController:FlowController) -> [LocalStepMo
                     )
                 )
             }
+            
+            let isDataRelay = def == StepsNames.dataRelay
+            if(isDataRelay){
+                guard let stepDef = configModel!.stepDefinitions.first(where: { $0.stepId == step.id }) else {
+                    continue
+                }
+                tempList.append(
+                    LocalStepModel(
+                        name: "",
+                        show: false,
+                        description: "",
+                        iconAssetPath: "",
+                        isDone: false,
+                        stepDefinition: stepDef,
+                        submitRequestModel: SubmitRequestModel(
+                            stepId: stepDef.stepId,
+                            stepDefinition: stepDef.stepDefinition,
+                            extractedInformation: [:]
+                        )
+                    )
+                )
+            }
 
         }
         

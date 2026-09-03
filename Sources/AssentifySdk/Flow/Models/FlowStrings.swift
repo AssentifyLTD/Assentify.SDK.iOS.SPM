@@ -345,4 +345,7 @@ public struct FlowStrings {
     public static var movePassportFurther: String { isArabic ? "ابعد جواز السفر" : "Move Passport Further" }
     public static var pleasePresentPassport: String { isArabic ? "يرجى تقديم جواز السفر" : "Please present passport" }
     public static var centerYourCard: String { isArabic ? "يرجى توسيط البطاقة" : "Please center your card" }
+    
+    public static var dataRelayDialogTitle: String { isArabic ? "جارٍ المعالجة" : "Processing ..." }
+    public static var dataRelayDialogMessage: String { isArabic ? "نقوم بالتحقق من بياناتك. لن يستغرق الأمر وقتاً طويلاً." : "We're validating your data. This won't take long." }
 }

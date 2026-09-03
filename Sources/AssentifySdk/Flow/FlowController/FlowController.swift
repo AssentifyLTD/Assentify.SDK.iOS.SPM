@@ -3,6 +3,9 @@ import SwiftUI
 
 public final class FlowController {
     
+    public var wrapUpStepID: Int = -1;
+
+    
     private weak var navigationController: UINavigationController?
     private var flowDelegate:FlowDelegate?
     
@@ -51,8 +54,159 @@ public final class FlowController {
     }
     
     public func naveToNextStep() {
-        chekSplitStepAndMoveNext();
+        wrapUpStepID = -1;
+        checkDataRelayStepAndMoveNext();
     }
+    
+    
+    public func checkDataRelayStepAndMoveNext(){
+        
+        guard let currentStep = getCurrentStep(),
+              currentStep.stepDefinition?.stepDefinition == StepsNames.dataRelay else {
+            chekSplitStepAndMoveNext();
+            return
+        }
+        
+        let apiKey = ApiKeyObject.shared.get()
+        let timeStarted = getCurrentDateTimeForTracking()
+        let configModel = ConfigModelObject.shared.get()
+        let allDoneSteps = getAllDoneSteps();
+        let stepId = currentStep.stepDefinition!.stepId
+        var results: [String: String] = [:]
+        allDoneSteps.forEach { step in
+            results.merge(step.submitRequestModel!.extractedInformation) { _, new in new }
+        }
+        
+        let alert = UIAlertController(
+            title: FlowStrings.dataRelayDialogTitle,
+            message: FlowStrings.dataRelayDialogMessage,
+            preferredStyle: .alert
+        )
+
+        if let title = alert.title {
+            let attributedTitle = NSAttributedString(
+                string: title,
+                attributes: [.foregroundColor: BaseTheme.baseTextColor]
+            )
+            alert.setValue(attributedTitle, forKey: "attributedTitle")
+        }
+
+        if let message = alert.message {
+            let attributedMessage = NSAttributedString(
+                string: message,
+                attributes: [.foregroundColor: BaseTheme.baseTextColor]
+            )
+            alert.setValue(attributedMessage, forKey: "attributedMessage")
+        }
+        
+        if let bgView = alert.view.subviews.first?.subviews.first {
+            bgView.backgroundColor = BaseTheme.fieldColor
+        }
+        
+        if let bgView = alert.view.subviews.first?.subviews.first {
+                   bgView.backgroundColor = BaseTheme.fieldColor
+                   bgView.layer.cornerRadius = 14        // ← corner radius
+                   bgView.clipsToBounds = true            // ← makes the radius actually clip content
+          }
+
+        DispatchQueue.main.async {
+            self.topViewController()?.present(alert, animated: true) {
+            }
+        }
+        
+
+        let components = URLComponents(
+               string: BaseUrls.baseURLGateway + "v1/Manager/GetStepCachedContent/\(stepId)"
+         )
+        
+        guard let url = components?.url else {
+            DispatchQueue.main.async {
+                self.topViewController()?.dismiss(animated: true)
+                self.makeCurrentStepDone(extractedInformation: [:], timeStarted: timeStarted)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self.chekSplitStepAndMoveNext()
+                }
+            }
+            return
+        }
+        
+        var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+            request.setValue(configModel!.blockIdentifier, forHTTPHeaderField: "X-Block-Identifier")
+            request.setValue(configModel!.flowIdentifier, forHTTPHeaderField: "X-Flow-Identifier")
+            request.setValue(configModel!.tenantIdentifier, forHTTPHeaderField: "X-Tenant-Identifier")
+
+            do {
+                request.httpBody = try JSONEncoder().encode(results)
+            } catch {
+                DispatchQueue.main.async {
+                    self.topViewController()?.dismiss(animated: true)
+                    self.makeCurrentStepDone(extractedInformation: [:], timeStarted: timeStarted)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            self.chekSplitStepAndMoveNext()
+                    }
+                }
+                return
+            }
+
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+
+               
+                var resultMap: [String: String] = [:]
+                if let httpResponse = response as? HTTPURLResponse,
+                   httpResponse.statusCode == 200,
+                 let responseData = data {
+
+                   
+                    if let json = try? JSONSerialization.jsonObject(with: responseData) as? [String: Any] {
+                        resultMap = json.mapValues { "\($0)" }
+                    }
+                    DispatchQueue.main.async {
+                        self.topViewController()?.dismiss(animated: true)
+                        self.makeCurrentStepDone(extractedInformation: resultMap, timeStarted: timeStarted)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                self.chekSplitStepAndMoveNext()
+                            }
+                    }
+
+                } else {
+                    DispatchQueue.main.async {
+                        self.topViewController()?.dismiss(animated: true)
+                        self.makeCurrentStepDone(extractedInformation: resultMap, timeStarted: timeStarted)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                self.chekSplitStepAndMoveNext()
+                        }
+                    }
+                }
+                
+                
+            }
+
+            task.resume()
+        
+        
+        
+      
+
+    }
+    
+    func topViewController() -> UIViewController? {
+        guard let windowScene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+            var top = window.rootViewController
+        else { return nil }
+
+        while let presented = top.presentedViewController {
+            top = presented
+        }
+        return top
+    }
+    
+    
     
     public  func chekSplitStepAndMoveNext() {
         let timeStarted = getCurrentDateTimeForTracking()
@@ -92,6 +246,7 @@ public final class FlowController {
         
         if hasWrapUp != nil {
             steps.removeAll(where: { !$0.isDone })
+            wrapUpStepID = hasWrapUp?.id ?? -1
         }
         
         let insertIndex = steps.firstIndex(where: { !$0.isDone }) ?? steps.count
