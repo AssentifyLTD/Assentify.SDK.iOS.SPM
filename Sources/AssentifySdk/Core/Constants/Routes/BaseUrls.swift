@@ -2,11 +2,11 @@
 import Foundation
 
 struct BaseUrls {
-    static let signalRHub = "https://qa.widgets.socket.assentify.com/"
-    static let baseURLSigning = "https://qa.signme.assentify.com/api/"
-    static let baseURLGateway = "https://qa.api.gateway.assentify.com/webapi/"
-    static let languageTransformationUrl = "https://qa.widgets.socket.assentify.com/api/"
-    static let blobUrl = "https://qa.blob.assentify.com/"
+    static let signalRHub = "https://widgets.socket.assentify.com/"
+    static let baseURLSigning = "https://signme.assentify.com/api/"
+    static let baseURLGateway = "https://api.gateway.assentify.com/webapi/"
+    static let languageTransformationUrl = "https://widgets.socket.assentify.com/api/"
+    static let blobUrl = "https://blob.assentify.com/"
  
 
 }
