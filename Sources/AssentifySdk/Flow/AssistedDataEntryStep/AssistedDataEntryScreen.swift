@@ -100,13 +100,52 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
                 let fieldType = InputTypes.fromString(element.inputType)
                 let phonePrefix = (element.defaultCountryCode ?? "")
                 let phoneFullValue = phonePrefix + value
+                let currentStep = flowController.getCurrentStep()
 
                 if let key, !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                    !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 
                     if fieldType == .phoneNumber {
                         extractedInformation[key] = phoneFullValue
-                    } else {
+                        for property in currentStep!.stepDefinition!.outputProperties {
+                            if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
+                                let country = allCountries.first { $0.dialCode == element.defaultCountryCode }!
+                                
+                                if property.key.hasSuffix("Number") {
+                                    extractedInformation[property.key] = value
+                                }
+                                if property.key.hasSuffix("Code") {
+                                    extractedInformation[property.key] = element.defaultCountryCode!
+                                }
+                                if property.key.hasSuffix("Iso2") {
+                                    extractedInformation[property.key] = country.code2
+                                }
+                                if property.key.hasSuffix("Iso3") {
+                                    extractedInformation[property.key] = country.code3
+                                }
+                            }
+                        }
+                    } else if fieldType == .phoneNumberWithOTP {
+                        extractedInformation[key] = value
+                        for property in currentStep!.stepDefinition!.outputProperties {
+                            if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
+                                let country = allCountries.first { $0.dialCode == "+961" }!
+                                
+                                if property.key.hasSuffix("Number") {
+                                    extractedInformation[property.key] = value.hasPrefix("+961") ? String(value.dropFirst(4)) : value
+                                }
+                                if property.key.hasSuffix("Code") {
+                                    extractedInformation[property.key] = "+961"
+                                }
+                                if property.key.hasSuffix("Iso2") {
+                                    extractedInformation[property.key] = country.code2
+                                }
+                                if property.key.hasSuffix("Iso3") {
+                                    extractedInformation[property.key] = country.code3
+                                }
+                            }
+                        }
+                    }  else {
                         extractedInformation[key] = value
                     }
                 }
@@ -264,8 +303,8 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
             }
 
             let pages = model.assistedDataEntryPages
-
-            for page in pages {
+            
+            for (index, page) in pages.enumerated() {
                 for element in page.dataEntryPageElements {
 
                     let key = element.inputKey
@@ -274,12 +313,51 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
                     let fieldType = InputTypes.fromString(element.inputType)
                     let phonePrefix = (element.defaultCountryCode ?? "")
                     let phoneFullValue = phonePrefix + value
+                    let currentStep = flowController.getCurrentStep()
 
                     if let key, !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 
                         if fieldType == .phoneNumber {
                             extractedInformation[key] = phoneFullValue
+                            for property in currentStep!.stepDefinition!.outputProperties {
+                                if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
+                                    let country = allCountries.first { $0.dialCode == element.defaultCountryCode }!
+                                    
+                                    if property.key.hasSuffix("Number") {
+                                        extractedInformation[property.key] = value
+                                    }
+                                    if property.key.hasSuffix("Code") {
+                                        extractedInformation[property.key] = element.defaultCountryCode!
+                                    }
+                                    if property.key.hasSuffix("Iso2") {
+                                        extractedInformation[property.key] = country.code2
+                                    }
+                                    if property.key.hasSuffix("Iso3") {
+                                        extractedInformation[property.key] = country.code3
+                                    }
+                                }
+                            }
+                        } else if fieldType == .phoneNumberWithOTP {
+                            extractedInformation[key] = value
+                            for property in currentStep!.stepDefinition!.outputProperties {
+                                if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
+                                    let country = allCountries.first { $0.dialCode == "+961" }!
+                                    
+                                    if property.key.hasSuffix("Number") {
+                                        extractedInformation[property.key] = value.hasPrefix("+961") ? String(value.dropFirst(4)) : value
+                                    }
+                                    if property.key.hasSuffix("Code") {
+                                        extractedInformation[property.key] = "+961"
+                                    }
+                                    if property.key.hasSuffix("Iso2") {
+                                        extractedInformation[property.key] = country.code2
+                                    }
+                                    if property.key.hasSuffix("Iso3") {
+                                        extractedInformation[property.key] = country.code3
+                                    }
+                                }
+                            }
                         } else {
                             extractedInformation[key] = value
                         }
@@ -287,11 +365,12 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
 
                     if let dirtyKey = isDirtyKey, !dirtyKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                        !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-
-                        if fieldType == .phoneNumber {
-                            extractedInformation[dirtyKey] = phoneFullValue
-                        } else {
-                            extractedInformation[dirtyKey] = value
+                        let defultValue = AssistedFormHelper.getDefaultValueValueToCheckIsDirty(key!, index, flowController: flowController)
+                   
+                        if(defultValue == value){
+                            extractedInformation[dirtyKey] = "false"
+                        }else{
+                            extractedInformation[dirtyKey] = "true"
                         }
                     }
 
