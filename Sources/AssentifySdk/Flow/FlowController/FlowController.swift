@@ -42,9 +42,9 @@ public final class FlowController {
         navigationController?.dismiss(animated: animated)
     }
     
-    public func setRoot( animated: Bool = false) {
+    public func setRoot( animated: Bool = false,isBack: Bool = false,) {
         applySemanticDirection()
-        let vc = UIHostingController(rootView: BlockLoaderScreen(flowController: self).environment(\.layoutDirection, flowLayoutDirection))
+        let vc = UIHostingController(rootView: BlockLoaderScreen(flowController: self,isBack:isBack).environment(\.layoutDirection, flowLayoutDirection))
         navigationController?.setViewControllers([vc], animated: animated)
     }
     
@@ -402,7 +402,7 @@ public final class FlowController {
     }
     
     public func backClick() {
-        setRoot(animated: true)
+        setRoot(animated: true,isBack: true)
     }
     
     
@@ -793,15 +793,15 @@ public final class FlowController {
               
               
 
-//            
+            
 //              let data = try encoder.encode(body)
 //              if let jsonString = String(data: data, encoding: .utf8) {
 //                  print("📦 TrackProgressRequest:\n\(configModel.instanceId)")
 //                  print("📦 TrackProgressRequest:\n\(jsonString)")
 //              }
 //              
-//              
-//              ////
+              
+              ////
               
           } catch {
               return

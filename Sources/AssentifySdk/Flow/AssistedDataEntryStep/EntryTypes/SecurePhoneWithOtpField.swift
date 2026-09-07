@@ -65,7 +65,8 @@ public struct SecurePhoneWithOtpField: View {
         if field.isHidden == false {
             VStack(alignment: .leading, spacing: 6) {
 
-                Text(headerTitle)
+                
+                Text(headerTitle) + Text(" *").foregroundColor(.red)
                     .font(.system(size: 16))
                     .foregroundColor(Color(BaseTheme.baseTextColor))
 
@@ -92,6 +93,7 @@ public struct SecurePhoneWithOtpField: View {
             }
             .onAppear {
                 setupOnce()
+                isVerified = AssistedFormHelper.getIfLocalOtpValid(self.field.inputKey!, page)
             }
             .fullScreenCover(isPresented: $expanded) {
                 dialogView()
@@ -178,7 +180,7 @@ public struct SecurePhoneWithOtpField: View {
                         }
                     }
                 ),
-                isEnabled: !isReadOnly,
+                isEnabled: isVerified == false,
                 onChange: { raw in
                     let clean = raw.filter { $0.isNumber || $0 == " " || $0 == "-" }
 
@@ -195,7 +197,7 @@ public struct SecurePhoneWithOtpField: View {
             )
             .frame(height: 55)
             .overlay(alignment: .trailing) {
-                if phoneLooksValid(localNumber) {
+                if phoneLooksValid(localNumber) && !isVerified{ 
                     Button {
                         sendOtp()
                     } label: {

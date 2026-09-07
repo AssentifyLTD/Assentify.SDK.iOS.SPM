@@ -45,6 +45,16 @@ public struct HowToCaptureScreen: View {
     private var subTitleText: String {
         isPassport ? FlowStrings.watchCapturePassport : FlowStrings.watchCaptureId
     }
+    
+    private var themeVideoOverride: String {
+        isPassport
+            ? BaseTheme.BaseHowToCapturePassportVideo
+            : BaseTheme.BaseHowToCaptureIDVideo
+    }
+    
+    private var isCustomVideoUrl: Bool {
+        !themeVideoOverride.isEmpty
+    }
 
     private var assetVideoFileName: String {
         isPassport ? "passport-video" : "id-video"
@@ -70,11 +80,21 @@ public struct HowToCaptureScreen: View {
 
                         Spacer().frame(height: 20)
 
-                        // MARK: VIDEO (Flexible like weight(1f))
-                        AssetVideoPlayer(assetName: assetVideoFileName)
-                            .frame(maxWidth: .infinity)
-                            .frame(maxHeight: .infinity)
-                            .padding(.horizontal, 10)
+                        if(isCustomVideoUrl){
+                            if let url = URL(string: themeVideoOverride) {
+                                UrlVideoPlayer(videoURL: url)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(maxHeight: .infinity)
+                                    .padding(.horizontal, 10)
+                            }
+                           
+                        }else{
+                            AssetVideoPlayer(assetName: assetVideoFileName)
+                                .frame(maxWidth: .infinity)
+                                .frame(maxHeight: .infinity)
+                                .padding(.horizontal, 10)
+                        }
+                    
 
                         Spacer().frame(height: 20)
 
@@ -170,6 +190,49 @@ public struct AssetVideoPlayer: View {
                 return
             }
             let newPlayer = AVPlayer(url: url)
+            newPlayer.isMuted = true   // mute audio
+            player = newPlayer
+        }
+    }
+}
+
+public struct UrlVideoPlayer: View {
+
+    let videoURL: URL
+    @State public var player: AVPlayer?
+
+    public var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                if let player {
+                    VideoPlayer(player: player)
+                        .frame(width: geo.size.width, height: geo.size.width)
+                        .clipped()
+                        // Overlay blocks the tap gesture that reveals controls
+                        .overlay(Color.clear.contentShape(Rectangle()))
+                        .allowsHitTesting(false)
+                        .onAppear {
+                            player.play()
+                            NotificationCenter.default.addObserver(
+                                forName: .AVPlayerItemDidPlayToEndTime,
+                                object: player.currentItem,
+                                queue: .main
+                            ) { _ in
+                                player.seek(to: .zero)
+                                player.play()
+                            }
+                        }
+                        .onDisappear {
+                            player.pause()
+                        }
+                } else {
+                    ProgressView()
+                }
+            }
+        }
+        .aspectRatio(1/1, contentMode: .fit)
+        .onAppear {
+            let newPlayer = AVPlayer(url: videoURL)
             newPlayer.isMuted = true   // mute audio
             player = newPlayer
         }

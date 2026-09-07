@@ -72,13 +72,13 @@ public struct FlowStrings {
 
     // MARK: - ID Step
 
-    public static var chooseCountry: String { isArabic ? "اختر بلد إقامتك" : "Choose your country of residence" }
+    public static var chooseCountry: String { isArabic ? "اختر بلد الإصدار" : "Choose your country of issuance" }
     public static var selectDocumentType: String { isArabic ? "اختر نوع المستند" : "Select type of document" }
     public static var selectCountry: String { isArabic ? "اختر البلد" : "Select country" }
     public static var passport: String { isArabic ? "جواز السفر" : "Passport" }
     public static var supportedIds: String { isArabic ? "الهويات المدعومة" : "Supported IDs" }
     public static var viewMore: String { isArabic ? "عرض المزيد" : "View more" }
-    public static var restOfTheWorld: String { isArabic ? "بقية العالم" : "Rest of the world" }
+    public static var restOfTheWorld: String { isArabic ? "آخر" : "Others" }
 
     public static func onlySupportedIds(flowName: String) -> String {
         isArabic

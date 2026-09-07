@@ -644,7 +644,7 @@ public class AssentifySdk {
 
             controller.setRoot(animated: false)
 
-            presenter.present(nav, animated: true)
+            presenter.present(nav, animated: false)
         }
         
         

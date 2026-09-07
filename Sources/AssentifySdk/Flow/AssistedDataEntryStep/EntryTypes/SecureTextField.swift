@@ -44,9 +44,14 @@ public struct SecureTextField: View {
             
             VStack(alignment: .leading, spacing: 6) {
                 
-                Text(title)
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(Color(BaseTheme.baseTextColor))
+                Group {
+                    if BaseTheme.baseValidationStyle == ValidationStyle.Asterisk && field.mandatory == true {
+                        Text(title).foregroundColor(Color(BaseTheme.baseTextColor)) + Text(" *").foregroundColor(.red)
+                    } else {
+                        Text(title).foregroundColor(Color(BaseTheme.baseTextColor))
+                    }
+                }
+                .font(.system(size: 16, weight: .regular))
                 
                 UIKitTextField(
                     text: Binding(

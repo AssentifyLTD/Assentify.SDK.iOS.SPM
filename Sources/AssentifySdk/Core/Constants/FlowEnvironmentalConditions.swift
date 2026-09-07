@@ -124,8 +124,24 @@ public struct UiLanguage {
       public static let Arabic = "ar"
 }
 
+public struct ValidationStyle {
+      public static let Message = "Message"
+      public static let Asterisk = "Asterisk"
+}
+
+public struct ClickFontWeight {
+      public static let Normal = "Normal"
+      public static let Medium = "Medium"
+      public static let Bold = "Bold"
+      public static let SemiBold = "SemiBold"
+      public static let ExtraBold = "ExtraBold"
+}
+
+
 
 // MARK: - FlowEnvironmentalConditions
+
+
 
 public final class FlowEnvironmentalConditions {
     public var logoUrl: String
@@ -149,7 +165,14 @@ public final class FlowEnvironmentalConditions {
     public let enableQr: Bool
     public let showCountDown: Bool
     public let blockLoaderCustomProperties: [String: Any]
-    
+    public let validationStyle: String
+    public let stepperTitleColor: String
+    public let howToCapturePassportVideo: String
+    public let howToCaptureIDVideo: String
+    public let howToCaptureFaceVideo: String
+    public let clickFontWeight: String
+    public let hideBlockLoader: Bool
+    public let hideWrapUp: Bool
     public let localMrzScan: Bool
 
     public init(
@@ -171,7 +194,16 @@ public final class FlowEnvironmentalConditions {
         enableQr: Bool = false,
         showCountDown: Bool = true,
         blockLoaderCustomProperties: [String: Any] = [:],
+        validationStyle: String = ValidationStyle.Message,
+        stepperTitleColor: String = "",
+        howToCapturePassportVideo: String = "",
+        howToCaptureIDVideo: String = "",
+        howToCaptureFaceVideo: String = "",
+        clickFontWeight: String = ClickFontWeight.Normal,
+        hideBlockLoader: Bool = false,
+        hideWrapUp: Bool = false,
         localMrzScan: Bool = false,
+
 
     ) {
         self.logoUrl = logoUrl
@@ -194,6 +226,14 @@ public final class FlowEnvironmentalConditions {
         self.enableQr = enableQr
         self.showCountDown = showCountDown
         self.blockLoaderCustomProperties = blockLoaderCustomProperties
+        self.validationStyle = validationStyle
+        self.stepperTitleColor = stepperTitleColor
+        self.howToCapturePassportVideo = howToCapturePassportVideo
+        self.howToCaptureIDVideo = howToCaptureIDVideo
+        self.howToCaptureFaceVideo = howToCaptureFaceVideo
+        self.clickFontWeight = clickFontWeight
+        self.hideBlockLoader = hideBlockLoader
+        self.hideWrapUp = hideWrapUp
         self.localMrzScan = localMrzScan
 
     }

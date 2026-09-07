@@ -79,7 +79,11 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
     }
 
     private func onBack() {
-        flowController.backClick()
+        if currentPage > 0 {
+            currentPage -= 1
+        } else {
+            flowController.backClick()
+        }
     }
     
     private func onNext(){

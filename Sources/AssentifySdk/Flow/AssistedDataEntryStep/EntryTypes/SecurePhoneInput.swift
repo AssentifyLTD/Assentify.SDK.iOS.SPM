@@ -54,9 +54,14 @@ public struct SecurePhoneInput: View {
         if self.field.isHidden == false {
             VStack(alignment: .leading, spacing: 6) {
 
-                Text(title)
-                    .font(.system(size: 16))
-                    .foregroundColor(Color(BaseTheme.baseTextColor))
+                Group {
+                    if BaseTheme.baseValidationStyle == ValidationStyle.Asterisk && field.mandatory == true {
+                        Text(title).foregroundColor(Color(BaseTheme.baseTextColor)) + Text(" *").foregroundColor(.red)
+                    } else {
+                        Text(title).foregroundColor(Color(BaseTheme.baseTextColor))
+                    }
+                }
+                .font(.system(size: 16, weight: .regular))
 
                 HStack(alignment: .top, spacing: 8) {
 
@@ -183,9 +188,14 @@ public struct SecurePhoneInput: View {
 
             VStack(spacing: 0) {
                 HStack {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Color(BaseTheme.baseTextColor))
+                    Group {
+                        if BaseTheme.baseValidationStyle == ValidationStyle.Asterisk && field.mandatory == true {
+                            Text(title).foregroundColor(Color(BaseTheme.baseTextColor)) + Text(" *").foregroundColor(.red)
+                        } else {
+                            Text(title).foregroundColor(Color(BaseTheme.baseTextColor))
+                        }
+                    }
+                    .font(.system(size: 16, weight: .semibold))
 
                     Spacer()
 
