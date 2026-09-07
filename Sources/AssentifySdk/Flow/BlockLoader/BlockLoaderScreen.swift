@@ -85,12 +85,67 @@ public struct BaseTheme {
         AssentifySdkObject.shared.get()?.environmentalConditions?.flowUiLanguage ?? UiLanguage.English;
     }
     
+    
+    public static var baseValidationStyle: String {
+        env.validationStyle
+    }
+    
+    public static var baseClickFontWeight: Font.Weight  {
+        getFontWeight(env.clickFontWeight)
+    }
+    
+    public static var StepperTitleColor: UIColor {
+        let colorString = env.stepperTitleColor
+        if colorString.isEmpty {
+            return  UIColor.fromHex(env.accentColor)
+        } else {
+            return  UIColor.fromHex(colorString)
+        }
+    }
+    
+    public static var BaseHowToCapturePassportVideo: String {
+        env.howToCapturePassportVideo
+    }
+    
+    public static var BaseHowToCaptureIDVideo: String {
+        env.howToCaptureIDVideo
+    }
+    
+    public static var BaseHowToCaptureFaceVideo: String {
+        env.howToCaptureFaceVideo
+    }
+    
+    
+    public static var hideBlockLoader: Bool {
+        env.hideBlockLoader
+    }
+    
+    
+    public static var hideWrapUp: Bool {
+        env.hideWrapUp
+    }
+    
     public static var localMrzScan: Bool {
         env.localMrzScan
     }
 }
 
-
+func getFontWeight(_ weight: String) -> Font.Weight {
+    switch weight {
+    case ClickFontWeight.Normal:
+        return .regular
+    case ClickFontWeight.Medium:
+        return .medium
+    case ClickFontWeight.Bold:
+        return .bold
+    case ClickFontWeight.SemiBold:
+        return .semibold
+    case ClickFontWeight.ExtraBold:
+        return .heavy
+    default:
+        return .regular
+    }
+}
 
 struct BlockLoaderScreen: View {
     
@@ -120,94 +175,131 @@ struct BlockLoaderScreen: View {
     }
     
     private let flowController: FlowController
+    private let isBack: Bool
     
     
     
-    public init(flowController: FlowController) {
+    public init(flowController: FlowController,isBack:Bool) {
         
         self.flowController = flowController
+        self.isBack = isBack
         steps = buildStepsFromConfig(flowController: flowController);
+        
         
     }
     
+    
+        
+
     var body: some View {
-        BaseBackgroundContainer {
-            VStack(spacing: 0) {
-                
-                
-                if(!HasSubmittedObject.shared.get()){
-                    Text(FlowStrings.completeOnboarding(count: steps.count))
-                        .font(.system(size: 25, weight: .bold))
-                        .foregroundColor(Color(BaseTheme.baseTextColor))
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 25)
-                        .padding(.leading, 25)
-                        .padding(.trailing, 20)
-                    
-                    Text(FlowStrings.onboardingSubtitle)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(Color(BaseTheme.baseTextColor))
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 5)
-                        .padding(.horizontal, 25)
-                        .padding(.bottom, 10)
-                    
-                }else{
-                    Text(FlowStrings.thankYou)
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundColor(Color(BaseTheme.baseTextColor))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(6)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 15)
-                        .padding(.leading, 25)
-                        .padding(.trailing, 20)
-                    
-                    Text(FlowStrings.completedSteps(count: steps.count))
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(Color(BaseTheme.baseTextColor))
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(6)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 10)
-                        .padding(.horizontal, 10)
-                        .padding(.bottom, 10)
-                }
-                // Header
-               
-                // Steps list
-                ScrollView {
-                    LazyVStack(spacing: 6) {
-                        ForEach(Array(steps.enumerated()), id: \.offset) {index, step in
-                            StepCard(
-                                step: step,
-                                selectedColor: Color(BaseTheme.baseAccentColor),
-                                unselectedColor: Color(BaseTheme.fieldColor),
-                                onClick: { }
-                            ).padding(.top, index == 0 ? 8 : 6)
+        if BaseTheme.hideBlockLoader {
+            BaseBackgroundContainer {
+                Color.clear
+                    .onAppear {
+                        if self.isBack {
+                            onBack()
+                        } else {
+                            if(!HasSubmittedObject.shared.get()){
+                                /** Track Progress **/
+                                if firstInit {
+                                    let steps = LocalStepsObject.shared.get()
+                                    let currentStep = steps.first { $0.stepDefinition?.stepDefinition == StepsNames.blockLoader }
+                                    flowController.trackProgress(
+                                        currentStep: currentStep!,
+                                        inputData: currentStep!.submitRequestModel!.extractedInformation,
+                                        response: nil,
+                                        status: "Completed"
+                                    )
+                                }
+                                /**/
+                                flowController.naveToNextStep()
+                            }else{
+                                flowController.endFlow(flowData:flowController.getFlowCompletedList())
+                            }
+                           
                         }
                     }
-                    .padding(.top, 4)
-                }
-                
-                .frame(maxHeight: .infinity)
-                
-                if(!HasSubmittedObject.shared.get()){
-                    BaseClickButton(title: FlowStrings.next) {
-                        onNext()
-                    }.padding(.vertical, 25)
-                    .padding(.horizontal, 25)
-                 
-                }
-              
-            } .topBarBackLogo(logoUrl :BaseTheme.baseLogo,noStepper: true,) {
-                onBack()
             }
-            
+        }
+        else{
+            BaseBackgroundContainer {
+                VStack(spacing: 0) {
+                    
+                    
+                    if(!HasSubmittedObject.shared.get()){
+                        Text(FlowStrings.completeOnboarding(count: steps.count))
+                            .font(.system(size: 25, weight: .bold))
+                            .foregroundColor(Color(BaseTheme.baseTextColor))
+                            .multilineTextAlignment(.leading)
+                            .lineSpacing(6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 25)
+                            .padding(.leading, 25)
+                            .padding(.trailing, 20)
+                        
+                        Text(FlowStrings.onboardingSubtitle)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundColor(Color(BaseTheme.baseTextColor))
+                            .multilineTextAlignment(.leading)
+                            .lineSpacing(6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 5)
+                            .padding(.horizontal, 25)
+                            .padding(.bottom, 10)
+                        
+                    }else{
+                        Text(FlowStrings.thankYou)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(Color(BaseTheme.baseTextColor))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(6)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 15)
+                            .padding(.leading, 25)
+                            .padding(.trailing, 20)
+                        
+                        Text(FlowStrings.completedSteps(count: steps.count))
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundColor(Color(BaseTheme.baseTextColor))
+                            .multilineTextAlignment(.leading)
+                            .lineSpacing(6)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.top, 10)
+                            .padding(.horizontal, 10)
+                            .padding(.bottom, 10)
+                    }
+                    // Header
+                    
+                    // Steps list
+                    ScrollView {
+                        LazyVStack(spacing: 6) {
+                            ForEach(Array(steps.enumerated()), id: \.offset) {index, step in
+                                StepCard(
+                                    step: step,
+                                    selectedColor: Color(BaseTheme.baseAccentColor),
+                                    unselectedColor: Color(BaseTheme.fieldColor),
+                                    onClick: { }
+                                ).padding(.top, index == 0 ? 8 : 6)
+                            }
+                        }
+                        .padding(.top, 4)
+                    }
+                    
+                    .frame(maxHeight: .infinity)
+                    
+                    if(!HasSubmittedObject.shared.get()){
+                        BaseClickButton(title: FlowStrings.next) {
+                            onNext()
+                        }.padding(.vertical, 25)
+                            .padding(.horizontal, 25)
+                        
+                    }
+                    
+                } .topBarBackLogo(logoUrl :BaseTheme.baseLogo,noStepper: true,) {
+                    onBack()
+                }
+                
+            }
         }
     }
 }

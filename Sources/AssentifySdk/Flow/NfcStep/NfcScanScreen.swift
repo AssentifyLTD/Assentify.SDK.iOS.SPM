@@ -241,7 +241,7 @@ private struct NfcScanScreenUI: View {
                     
                 }) {
                     Text(FlowStrings.retry)
-                        .font(.system(size: 16, weight: .regular))
+                        .font(.system(size: 16, weight: BaseTheme.baseClickFontWeight))
                         .foregroundColor(
                             Color(BaseTheme.baseSecondaryTextColor)
                         )

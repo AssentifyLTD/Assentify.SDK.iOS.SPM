@@ -9,18 +9,22 @@ public enum SubmitDataTypes {
 // MARK: - SubmitStepScreen (SwiftUI - single view like your other screens)
 public struct SubmitStepScreen: View ,SubmitDataDelegate {
     public func onSubmitError(message: String) {
-        DispatchQueue.main.async {
-            submitDataTypes = SubmitDataTypes.onError
+        if(!BaseTheme.hideWrapUp){
+            DispatchQueue.main.async {
+                submitDataTypes = SubmitDataTypes.onError
+            }
         }
     }
     
     public func onSubmitSuccess() {
-        
-        DispatchQueue.main.async {
-            HasSubmittedObject.shared.set(true)
-            flowController.endFlow(flowData:flowController.getFlowCompletedList())
+        if(!BaseTheme.hideWrapUp){
+            DispatchQueue.main.async {
+                HasSubmittedObject.shared.set(true)
+                flowController.endFlow(flowData:flowController.getFlowCompletedList())
 
+            }
         }
+        
 
     }
     
@@ -39,127 +43,141 @@ public struct SubmitStepScreen: View ,SubmitDataDelegate {
 
     public var body: some View {
 
-        BaseBackgroundContainer {
-            VStack(spacing: 0) {
-                // Middle + Bottom
+        if BaseTheme.hideWrapUp {
+            BaseBackgroundContainer {
+                Color.clear
+                    .onAppear {
+                        if(!HasSubmittedObject.shared.get()){
+                            startSubmit()
+                            HasSubmittedObject.shared.set(true)
+                            flowController.endFlow(flowData:flowController.getFlowCompletedList())
+                        }
+                    }
+            }
+        }
+        else{
+            BaseBackgroundContainer {
                 VStack(spacing: 0) {
-
-                    // =========================
-                    // MIDDLE (takes remaining space)
-                    // =========================
-                    ZStack {
-                        switch submitDataTypes {
-
-                        case SubmitDataTypes.none , SubmitDataTypes.onSend:
-                            MiddleContent(
-                                title: submitTitle,
-                                message: submitMessage,
-                                messageColor: Color(BaseTheme.baseTextColor)
+                    // Middle + Bottom
+                    VStack(spacing: 0) {
+                        
+                        // =========================
+                        // MIDDLE (takes remaining space)
+                        // =========================
+                        ZStack {
+                            switch submitDataTypes {
+                                
+                            case SubmitDataTypes.none , SubmitDataTypes.onSend:
+                                MiddleContent(
+                                    title: submitTitle,
+                                    message: submitMessage,
+                                    messageColor: Color(BaseTheme.baseTextColor)
+                                )
+                                
+                            case SubmitDataTypes.onError:
+                                MiddleContent(
+                                    title: nil,
+                                    message: FlowStrings.submitError,
+                                    messageColor: Color(BaseTheme.baseRedColor)
+                                )
+                                
+                                
+                            default:
+                                MiddleContent(
+                                    title: submitTitle,
+                                    message: submitMessage,
+                                    messageColor: Color(BaseTheme.baseTextColor)
+                                )
+                            }
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding(.horizontal, 12)
+                        
+                        // =========================
+                        // BOTTOM (fixed)
+                        // =========================
+                        if shouldShowSwipe {
+                            SwipeToSubmit(
+                                text: swipeText,
+                                height: 75,
+                                corner: 35,
+                                resetKey: resetTick,
+                            ) {
+                                onSubmit()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 30)
+                        }
+                        if(submitDataTypes == SubmitDataTypes.onSend){
+                            ProgressView().progressViewStyle(CircularProgressViewStyle(tint: Color(BaseTheme.baseTextColor)))
+                                .scaleEffect(1.6) .padding(.vertical, 30)
+                        }
+                    }
+                }.topBarBackLogo(logoUrl :BaseTheme.baseLogo,noStepper: true,) {
+                    onBack()
+                }
+            } .modifier(InterceptSystemBack(action: onBack))
+                .onAppear {
+                    // Start submit when screen appears (like Activity onCreate)
+                    
+                    var wrapUp: SubmitRequestModel? = nil
+                    let initSteps = ConfigModelObject.shared.get()!.stepDefinitions
+                    
+                    let stepId = flowController.wrapUpStepID != -1
+                    ? flowController.wrapUpStepID
+                    : ConfigModelObject.shared.get()!.stepMap.last!.id
+                    
+                    
+                    for item in initSteps {
+                        if item.stepId == stepId{
+                            self.submitTitle = item.customization.header!
+                            self.submitMessage = item.customization.summaryMessage!
+                            
+                            var values: [String: String] = [:]
+                            
+                            for property in item.outputProperties {
+                                if property.key.contains(WrapUpKeys.timeEnded) {
+                                    values[property.key] = getTimeUTC()
+                                }
+                            }
+                            
+                            wrapUp = SubmitRequestModel(
+                                stepId: item.stepId,
+                                stepDefinition: StepsNames.wrapUp,
+                                extractedInformation: values
                             )
                             
-                        case SubmitDataTypes.onError:
-                            MiddleContent(
-                                title: nil,
-                                message: FlowStrings.submitError,
-                                messageColor: Color(BaseTheme.baseRedColor)
+                            flowController.trackProgress(
+                                currentStep : LocalStepModel(
+                                    name : "",
+                                    description : "",
+                                    iconAssetPath : "",
+                                    isDone : false,
+                                    stepDefinition : item,
+                                    submitRequestModel : wrapUp
+                                ),
+                                inputData: wrapUp?.extractedInformation,
+                                response: "Completed",
+                                status: "Completed"
                             )
-
-                       
-                        default:
-                            MiddleContent(
-                                title: submitTitle,
-                                message: submitMessage,
-                                messageColor: Color(BaseTheme.baseTextColor)
-                            )
+                            
+                            break
                         }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.horizontal, 12)
-
-                    // =========================
-                    // BOTTOM (fixed)
-                    // =========================
-                    if shouldShowSwipe {
-                        SwipeToSubmit(
-                            text: swipeText,
-                            height: 75,
-                            corner: 35,
-                            resetKey: resetTick,
-                        ) {
-                            onSubmit()
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 30)
-                    }
-                    if(submitDataTypes == SubmitDataTypes.onSend){
-                        ProgressView().progressViewStyle(CircularProgressViewStyle(tint: Color(BaseTheme.baseTextColor)))
-                           .scaleEffect(1.6) .padding(.vertical, 30)
-                    }
-                }
-            }.topBarBackLogo(logoUrl :BaseTheme.baseLogo,noStepper: true,) {
-                onBack()
-            }
-        } .modifier(InterceptSystemBack(action: onBack))
-        .onAppear {
-            // Start submit when screen appears (like Activity onCreate)
-
-            var wrapUp: SubmitRequestModel? = nil
-            let initSteps = ConfigModelObject.shared.get()!.stepDefinitions
-            
-            let stepId = flowController.wrapUpStepID != -1
-                ? flowController.wrapUpStepID
-                : ConfigModelObject.shared.get()!.stepMap.last!.id
-            
-
-            for item in initSteps {
-                if item.stepId == stepId{
-                    self.submitTitle = item.customization.header!
-                    self.submitMessage = item.customization.summaryMessage!
-
-                    var values: [String: String] = [:]
-
-                    for property in item.outputProperties {
-                        if property.key.contains(WrapUpKeys.timeEnded) {
-                            values[property.key] = getTimeUTC()
-                        }
-                    }
-
-                    wrapUp = SubmitRequestModel(
-                        stepId: item.stepId,
-                        stepDefinition: StepsNames.wrapUp,
-                        extractedInformation: values
-                    )
                     
-                    flowController.trackProgress(
-                        currentStep : LocalStepModel(
-                            name : "",
-                            description : "",
-                            iconAssetPath : "",
-                            isDone : false,
-                            stepDefinition : item,
-                            submitRequestModel : wrapUp
-                        ),
-                        inputData: wrapUp?.extractedInformation,
-                        response: "Completed",
-                        status: "Completed"
-                    )
-
-                    break
+                    
+                    
                 }
-            }
-            
-            
-            
-        }
-        .onChange(of: submitDataTypes) { newValue in
-            if newValue == SubmitDataTypes.onError {
-                resetTick += 1
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    if submitDataTypes == SubmitDataTypes.onError {
-                        submitDataTypes = SubmitDataTypes.none
+                .onChange(of: submitDataTypes) { newValue in
+                    if newValue == SubmitDataTypes.onError {
+                        resetTick += 1
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                            if submitDataTypes == SubmitDataTypes.onError {
+                                submitDataTypes = SubmitDataTypes.none
+                            }
+                        }
                     }
                 }
-            }
         }
     }
 

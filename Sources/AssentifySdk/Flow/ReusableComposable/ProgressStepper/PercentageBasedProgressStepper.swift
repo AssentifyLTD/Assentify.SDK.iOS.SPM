@@ -243,7 +243,7 @@ public struct PercentageBasedProgressStepper: View {
                     PBCaret(color: theme.activeColor)
                     Text(stepperTitle)
                         .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(theme.upcomingColor)
+                        .foregroundColor(Color(uiColor: BaseTheme.StepperTitleColor))
                         .multilineTextAlignment(.center)
                 }
                 // Measure where the active node centre is so we can offset the caret

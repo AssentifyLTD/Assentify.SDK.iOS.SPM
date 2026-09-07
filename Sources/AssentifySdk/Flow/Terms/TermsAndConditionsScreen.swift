@@ -136,7 +136,7 @@ public struct TermsAndConditionsScreen: View {
                                 }
                             } label: {
                                 Text(FlowStrings.decline)
-                                    .font(.system(size: 18, weight: .medium))
+                                    .font(.system(size: 18, weight: BaseTheme.baseClickFontWeight))
                                     .foregroundColor(Color(BaseTheme.baseAccentColor))
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 54)

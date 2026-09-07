@@ -33,10 +33,14 @@ public struct SecureCheckboxGroup: View {
         if field.isHidden == false {
             VStack(alignment: .leading, spacing: 6) {
 
-                // MARK: - Title
-                Text(title)
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(Color(BaseTheme.baseTextColor))
+                Group {
+                    if BaseTheme.baseValidationStyle == ValidationStyle.Asterisk && field.mandatory == true {
+                        Text(title).foregroundColor(Color(BaseTheme.baseTextColor)) + Text(" *").foregroundColor(.red)
+                    } else {
+                        Text(title).foregroundColor(Color(BaseTheme.baseTextColor))
+                    }
+                }
+                .font(.system(size: 16, weight: .regular))
 
                 // MARK: - Options container
                 VStack(spacing: 0) {

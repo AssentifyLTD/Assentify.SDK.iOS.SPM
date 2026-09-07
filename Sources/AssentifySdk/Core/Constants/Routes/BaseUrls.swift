@@ -12,3 +12,4 @@ struct BaseUrls {
 }
 
 let  SENTRY_DNS = "https://74e4085c2e6d7091d58117d96a00a604@o4507430254673920.ingest.us.sentry.io/4507509355118592"
+

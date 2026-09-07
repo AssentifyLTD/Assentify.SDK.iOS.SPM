@@ -195,7 +195,64 @@ public enum AssistedFormHelper {
         
         // Mandatory
         if (field.mandatory ?? false) && fieldValue.isEmpty {
-            return FlowStrings.fieldRequired
+            return if BaseTheme.baseValidationStyle == ValidationStyle.Message {
+                FlowStrings.fieldRequired
+            } else {
+                ""
+            }
+        }
+
+        if fieldValue.isEmpty { return nil }
+
+        // Min/Max
+        if let min = field.minLength, fieldValue.count < min {
+            return FlowStrings.minCharactersRequired(min)
+        }
+        if let max = field.maxLength, fieldValue.count > max {
+            return FlowStrings.maxCharactersAllowed(max)
+        }
+
+        // Email regex
+        if fieldType == .email, !fieldValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let emailPattern = "^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$"
+            if !matchesRegex(fieldValue, pattern: emailPattern, ignoreCase: true) {
+                return (field.regexErrorMessage?.isEmpty == false)
+                ? field.regexErrorMessage
+                : FlowStrings.invalidEmail
+            }
+        }
+
+        // Custom regex
+        if field.applyRegex ?? false {
+            let pattern = field.regexDescriptor ?? ""
+            if !pattern.isEmpty {
+                if !matchesRegex(fieldValue, pattern: pattern, ignoreCase: true) {
+                    return (field.regexErrorMessage?.isEmpty == false)
+                    ? field.regexErrorMessage
+                    : FlowStrings.pleaseEnterValidValue
+                }
+            }
+        }
+        
+        return nil
+    }
+    
+    
+    public static func validateFieldForPage(_ key: String, _ page: Int) -> String? {
+        guard let model = AssistedDataEntryPagesObject.shared.get() else { return nil }
+        guard model.assistedDataEntryPages.indices.contains(page) else { return nil }
+        
+        guard let field = model.assistedDataEntryPages[page].dataEntryPageElements.first(where: { $0.inputKey == key }) else {
+            return nil
+        }
+        
+        let fieldValue = field.value ?? ""
+        let fieldType = InputTypes.fromString(field.inputType)
+        
+        // Mandatory
+        if (field.mandatory ?? false) && fieldValue.isEmpty {
+            return  FlowStrings.fieldRequired
+            
         }
 
         if fieldValue.isEmpty { return nil }
@@ -255,7 +312,7 @@ public enum AssistedFormHelper {
         
         for f in fields {
             guard let k = f.inputKey else { continue }
-            if let err = validateField(k, page), !err.isEmpty {
+            if let err = validateFieldForPage(k, page), !err.isEmpty {
                 return false
             }
         }
@@ -507,5 +564,16 @@ public enum AssistedFormHelper {
 
         return resultMap
     }
+    
+    static func getIfLocalOtpValid(_ key: String, _ page: Int) -> Bool  {
+        guard var model = AssistedDataEntryPagesObject.shared.get() else { return  false}
+        let pages = model.assistedDataEntryPages
+     
+        guard let field = pages[page].dataEntryPageElements
+            .first(where: { $0.inputKey == key }) else { return false}
+
+        
+        return  field.isLocalOtpValid
+      }
 
 }

@@ -198,7 +198,6 @@ public struct FaceResultScreen: View {
                     cornerRadius: 28,
                     verticalPadding: 18,
                     enabled: true,
-                    fontWeight: .bold,
                     action: onIDChange,
                 )
 
@@ -285,7 +284,7 @@ private struct OutlineButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 16, weight: .regular))
+                .font(.system(size: 16, weight: BaseTheme.baseClickFontWeight))
                 .foregroundColor(textColor)
                 .frame(maxWidth: .infinity)
                 .frame(height: height)

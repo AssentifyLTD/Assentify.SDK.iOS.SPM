@@ -270,7 +270,7 @@ public struct BaseSliderClick: View {
             .font(
                 .system(
                     size: 18,
-                    weight: .bold
+                    weight: BaseTheme.baseClickFontWeight
                 )
             )
             .foregroundStyle(

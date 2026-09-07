@@ -54,7 +54,7 @@ public struct SecureEmailWithOtpField: View {
         if (self.field.isHidden == false){
             VStack(alignment: .leading, spacing: 6) {
                 
-                Text(headerTitle)
+                Text(headerTitle) + Text(" *").foregroundColor(.red)
                     .font(.system(size: 16, weight: .regular))
                     .foregroundColor(Color(BaseTheme.baseTextColor))
                 
@@ -83,6 +83,8 @@ public struct SecureEmailWithOtpField: View {
             .onAppear {
                 syncInitialEmail()
                 recomputeEmailError()
+                isVerified = AssistedFormHelper.getIfLocalOtpValid(self.field.inputKey!, page)
+
             }
             .onChange(of: email) { _ in
                 onValueChange(email)
@@ -127,13 +129,13 @@ public struct SecureEmailWithOtpField: View {
                         else if focusedFieldId == fieldId { focusedFieldId = nil }
                     }
                 ),
-                isEnabled: !isReadOnly
+                isEnabled: isVerified == false
             ) { newValue in
                 email = newValue
             }
             .frame(height: 55)
             
-            if emailLooksValid(email) {
+            if emailLooksValid(email) && !isVerified{
                 Button {
                     sendOtp()
                 } label: {

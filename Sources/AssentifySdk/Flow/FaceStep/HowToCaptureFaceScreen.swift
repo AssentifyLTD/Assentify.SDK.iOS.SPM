@@ -51,6 +51,8 @@ public struct HowToCaptureFaceScreen: View {
     private var titleText = FlowStrings.faceMatch
     private var subTitleText = FlowStrings.watchCaptureSelfieMultiline
     private var subTitleTextOnLine = FlowStrings.watchCaptureSelfieSingleLine
+    
+    private var isCustomVideoUrl = !BaseTheme.BaseHowToCaptureFaceVideo.isEmpty
     private var assetVideoFileName = "face-video"
 
     // ✅ New states (logic only)
@@ -148,13 +150,24 @@ public struct HowToCaptureFaceScreen: View {
                     }
                 
 
-                
+                    if(isCustomVideoUrl){
+                        if let url = URL(string: BaseTheme.BaseHowToCaptureFaceVideo) {
+                            // MARK: VIDEO (Flexible like weight(1f))
+                            UrlVideoPlayer(videoURL: url)
+                                .frame(maxWidth: .infinity)
+                                .frame(maxHeight: .infinity)
+                                .padding(.horizontal, 10)
+                        }
+                       
+                    }else{
+                        // MARK: VIDEO (Flexible like weight(1f))
+                        AssetVideoPlayer(assetName: assetVideoFileName)
+                            .frame(maxWidth: .infinity)
+                            .frame(maxHeight: .infinity)
+                            .padding(.horizontal, 10)
+                    }
 
-                    // MARK: VIDEO (Flexible like weight(1f))
-                    AssetVideoPlayer(assetName: assetVideoFileName)
-                        .frame(maxWidth: .infinity)
-                        .frame(maxHeight: .infinity)
-                        .padding(.horizontal, 10)
+                    
 
                     Spacer().frame(height: 20)
 
