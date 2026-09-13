@@ -67,11 +67,11 @@ public struct QrScanStep: View {
 
     private func onBack() {
         commands.triggerClose += 1
-        flowController.backClick()
+        flowController.pop(animated: true)
     }
 
     private func onNext() {
-        DispatchQueue.main.async { screenEvent = .idle }
+//        DispatchQueue.main.async { screenEvent = .idle }
         commands.triggerClose += 1
 
         flowController.makeCurrentStepDone(extractedInformation: dataIDModel!.iDExtractedModel!.transformedProperties!,timeStarted: self.timeStarted)

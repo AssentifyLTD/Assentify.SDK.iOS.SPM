@@ -73,11 +73,11 @@ public struct MultipleFilesContextAwareScreen: View, ContextAwareDelegate {
             }
         }
 
-        if let stepId = flowController.getCurrentStep()?.stepDefinition?.stepId {
-            if let userDocumentModel = CreateUserDocumentObject.shared.get(stepId: stepId) {
-                buildOnCreateUserDocumentInstance(userDocumentResponseModel: userDocumentModel)
-            }
-        }
+//        if let stepId = flowController.getCurrentStep()?.stepDefinition?.stepId {
+//            if let userDocumentModel = CreateUserDocumentObject.shared.get(stepId: stepId) {
+//                buildOnCreateUserDocumentInstance(userDocumentResponseModel: userDocumentModel)
+//            }
+//        }
     }
 
 

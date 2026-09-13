@@ -65,13 +65,13 @@ public struct PassportScanStep: View {
     
     private func onBack() {
         commands.triggerClose += 1
-        flowController.backClick()
+        flowController.pop(animated: true)
     }
     
     private func onNext() {
-        DispatchQueue.main.async {
-            screenEvent = .idle
-        }
+//        DispatchQueue.main.async {
+//            screenEvent = .idle
+//        }
         commands.triggerClose += 1
         if(FlowEnvironmentalConditionsObject.shared.get()!.enableNfc){
             self.flowController.push(NfcScanScreen(flowController: self.flowController))

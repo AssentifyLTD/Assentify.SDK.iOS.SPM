@@ -103,11 +103,11 @@ public struct IDCardScanStep: View {
     
     private func onBack() {
         commands.triggerClose += 1
-        flowController.backClick()
+        flowController.pop(animated: true)
     }
     
     private func onNext() {
-        DispatchQueue.main.async { screenEvent = .idle }
+//        DispatchQueue.main.async { screenEvent = .idle }
         commands.triggerClose += 1
         
         if (FlowEnvironmentalConditionsObject.shared.get()!.enableQr && kycDocumentDetails
@@ -152,9 +152,10 @@ public struct IDCardScanStep: View {
                     var currentMap = extractedInformation
                     
                     if let newProps = model.iDExtractedModel?.transformedProperties {
-                        for (k, v) in newProps {
-                            currentMap[k] = v
+                        let filtered = newProps.filter { key, _ in
+                            !key.isEmpty && currentMap[key] == nil
                         }
+                        currentMap.merge(filtered) { current, _ in current }
                     }
                     
                     extractedInformation = currentMap

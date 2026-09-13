@@ -28,6 +28,16 @@ public struct SecureCheckboxGroup: View {
         self.flowController = flowController
         self.onValueChange = onValueChange
     }
+    
+    private func setupObserver() {
+        NotificationCenter.default.addObserver(
+          forName: .baseShowMessageChanged,
+          object: nil,
+          queue: .main
+        ) { _ in
+          validate()
+        }
+      }
 
     public var body: some View {
         if field.isHidden == false {
@@ -111,6 +121,7 @@ public struct SecureCheckboxGroup: View {
                 }
             }
             .onAppear {
+                setupObserver()
                 loadDefaultIfNeeded()
             }
             .onChange(of: field.inputKey) { _ in

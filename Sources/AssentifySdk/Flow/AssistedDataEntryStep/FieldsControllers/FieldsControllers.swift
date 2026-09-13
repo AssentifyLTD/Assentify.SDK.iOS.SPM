@@ -195,7 +195,7 @@ public enum AssistedFormHelper {
         
         // Mandatory
         if (field.mandatory ?? false) && fieldValue.isEmpty {
-            return if BaseTheme.baseValidationStyle == ValidationStyle.Message {
+            return if BaseTheme.baseValidationStyle == ValidationStyle.Message || BaseTheme.baseShowMessage{
                 FlowStrings.fieldRequired
             } else {
                 ""

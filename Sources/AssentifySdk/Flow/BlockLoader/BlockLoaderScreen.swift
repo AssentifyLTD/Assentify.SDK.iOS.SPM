@@ -128,6 +128,17 @@ public struct BaseTheme {
     public static var localMrzScan: Bool {
         env.localMrzScan
     }
+    
+    public static var baseShowMessage: Bool = false {
+          didSet {
+              NotificationCenter.default.post(name: .baseShowMessageChanged, object: nil)
+          }
+      }
+
+}
+
+extension Notification.Name {
+    static let baseShowMessageChanged = Notification.Name("baseShowMessageChanged")
 }
 
 func getFontWeight(_ weight: String) -> Font.Weight {
@@ -152,7 +163,7 @@ struct BlockLoaderScreen: View {
     var firstInit = LocalStepsObject.shared.get().isEmpty
 
     
-    var steps:[LocalStepModel]  = [];
+    @State private var steps: [LocalStepModel] = []
     
     func onBack ()  {
         flowController.dismiss()
@@ -171,51 +182,56 @@ struct BlockLoaderScreen: View {
         }
        
         /**/
-        flowController.naveToNextStep()
+        flowController.naveToNextStep(isFirst: true)
     }
     
     private let flowController: FlowController
     private let isBack: Bool
+    private let hasHiddenSteps: Bool
     
     
     
-    public init(flowController: FlowController,isBack:Bool) {
-        
+    public init(flowController: FlowController,isBack:Bool,hasHiddenSteps:Bool) {
         self.flowController = flowController
         self.isBack = isBack
-        steps = buildStepsFromConfig(flowController: flowController);
-        
-        
+        self.hasHiddenSteps = hasHiddenSteps
+        IsBackObject.shared.set(false);
     }
     
     
         
 
     var body: some View {
-        if BaseTheme.hideBlockLoader {
+        if BaseTheme.hideBlockLoader && !hasHiddenSteps {
             BaseBackgroundContainer {
                 Color.clear
                     .onAppear {
+                        self.steps = buildStepsFromConfig(flowController: flowController);
                         if self.isBack {
                             onBack()
                         } else {
-                            if(!HasSubmittedObject.shared.get()){
-                                /** Track Progress **/
-                                if firstInit {
-                                    let steps = LocalStepsObject.shared.get()
-                                    let currentStep = steps.first { $0.stepDefinition?.stepDefinition == StepsNames.blockLoader }
-                                    flowController.trackProgress(
-                                        currentStep: currentStep!,
-                                        inputData: currentStep!.submitRequestModel!.extractedInformation,
-                                        response: nil,
-                                        status: "Completed"
-                                    )
-                                }
-                                /**/
-                                flowController.naveToNextStep()
+                            if(IsBackObject.shared.get()!){
+                                onBack()
                             }else{
-                                flowController.endFlow(flowData:flowController.getFlowCompletedList())
+                                if(!HasSubmittedObject.shared.get()){
+                                    /** Track Progress **/
+                                    if firstInit {
+                                        let steps = LocalStepsObject.shared.get()
+                                        let currentStep = steps.first { $0.stepDefinition?.stepDefinition == StepsNames.blockLoader }
+                                        flowController.trackProgress(
+                                            currentStep: currentStep!,
+                                            inputData: currentStep!.submitRequestModel!.extractedInformation,
+                                            response: nil,
+                                            status: "Completed"
+                                        )
+                                    }
+                                    /**/
+                                    flowController.naveToNextStep(isFirst: true)
+                                }else{
+                                    flowController.endFlow(flowData:flowController.getFlowCompletedList())
+                                }
                             }
+                          
                            
                         }
                     }
@@ -295,7 +311,10 @@ struct BlockLoaderScreen: View {
                         
                     }
                     
-                } .topBarBackLogo(logoUrl :BaseTheme.baseLogo,noStepper: true,) {
+                }.onAppear {
+                    self.steps = buildStepsFromConfig(flowController: flowController);
+                }
+                .topBarBackLogo(logoUrl :BaseTheme.baseLogo,noStepper: true,) {
                     onBack()
                 }
                 

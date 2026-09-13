@@ -35,6 +35,7 @@ public final class FlowController {
     }
     
     public func pop(animated: Bool = true) {
+        IsBackObject.shared.set(true);
         navigationController?.popViewController(animated: animated)
     }
     
@@ -42,9 +43,9 @@ public final class FlowController {
         navigationController?.dismiss(animated: animated)
     }
     
-    public func setRoot( animated: Bool = false,isBack: Bool = false,) {
+    public func setRoot( animated: Bool = false,isBack: Bool = false,hasHiddenSteps: Bool = false) {
         applySemanticDirection()
-        let vc = UIHostingController(rootView: BlockLoaderScreen(flowController: self,isBack:isBack).environment(\.layoutDirection, flowLayoutDirection))
+        let vc = UIHostingController(rootView: BlockLoaderScreen(flowController: self,isBack:isBack,hasHiddenSteps:hasHiddenSteps).environment(\.layoutDirection, flowLayoutDirection))
         navigationController?.setViewControllers([vc], animated: animated)
     }
     
@@ -53,17 +54,30 @@ public final class FlowController {
         self.dismiss(animated: animated)
     }
     
-    public func naveToNextStep() {
+    public func naveToNextStep(isFirst: Bool = false) {
         wrapUpStepID = -1;
-        checkDataRelayStepAndMoveNext();
+        if(isFirst){
+            let hasHiddenSteps = LocalStepsObject.shared.get().filter {
+                $0.stepDefinition!.stepDefinition == StepsNames.split || $0.stepDefinition!.stepDefinition == StepsNames.dataRelay
+            }
+            
+            if(!hasHiddenSteps.isEmpty){
+                checkDataRelayStepAndMoveNext(isFirst:false);
+            }else{
+                moveNext(isFirst:true)
+            }
+            
+        }else{
+            checkDataRelayStepAndMoveNext(isFirst:false);
+        }
     }
     
     
-    public func checkDataRelayStepAndMoveNext(){
+    public func checkDataRelayStepAndMoveNext(isFirst: Bool = false){
         
         guard let currentStep = getCurrentStep(),
               currentStep.stepDefinition?.stepDefinition == StepsNames.dataRelay else {
-            chekSplitStepAndMoveNext();
+            chekSplitStepAndMoveNext(isFirst: isFirst);
             return
         }
         
@@ -124,7 +138,7 @@ public final class FlowController {
                 self.topViewController()?.dismiss(animated: true)
                 self.makeCurrentStepDone(extractedInformation: [:], timeStarted: timeStarted)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        self.chekSplitStepAndMoveNext()
+                        self.chekSplitStepAndMoveNext(isFirst: isFirst)
                 }
             }
             return
@@ -146,7 +160,7 @@ public final class FlowController {
                     self.topViewController()?.dismiss(animated: true)
                     self.makeCurrentStepDone(extractedInformation: [:], timeStarted: timeStarted)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            self.chekSplitStepAndMoveNext()
+                            self.chekSplitStepAndMoveNext(isFirst: isFirst)
                     }
                 }
                 return
@@ -168,7 +182,7 @@ public final class FlowController {
                         self.topViewController()?.dismiss(animated: true)
                         self.makeCurrentStepDone(extractedInformation: resultMap, timeStarted: timeStarted)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                self.chekSplitStepAndMoveNext()
+                                self.chekSplitStepAndMoveNext(isFirst: isFirst)
                             }
                     }
 
@@ -177,7 +191,7 @@ public final class FlowController {
                         self.topViewController()?.dismiss(animated: true)
                         self.makeCurrentStepDone(extractedInformation: resultMap, timeStarted: timeStarted)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                self.chekSplitStepAndMoveNext()
+                                self.chekSplitStepAndMoveNext(isFirst: isFirst)
                         }
                     }
                 }
@@ -208,12 +222,12 @@ public final class FlowController {
     
     
     
-    public  func chekSplitStepAndMoveNext() {
+    public  func chekSplitStepAndMoveNext(isFirst: Bool = false) {
         let timeStarted = getCurrentDateTimeForTracking()
         
         guard let currentStep = getCurrentStep(),
               currentStep.stepDefinition?.stepDefinition == StepsNames.split else {
-            moveNext()
+            moveNext(isFirst: isFirst)
             return
         }
         
@@ -230,7 +244,7 @@ public final class FlowController {
               let configModelObject = ConfigModelObject.shared.get(),
               let splitStep = configModelObject.stepMap.first(where: { $0.id == currentStep.stepDefinition?.stepId }),
               branch.branchIndex < splitStep.branches!.count else {
-            moveNext()
+            moveNext(isFirst: isFirst)
             return
         }
 
@@ -291,11 +305,11 @@ public final class FlowController {
         }
         
         LocalStepsObject.shared.set(steps)
-        moveNext()
+        moveNext(isFirst: isFirst)
     }
     
-    public func moveNext(){
-        let currentStep = getCurrentStep()
+    public func moveNext(isFirst: Bool = false){
+        let currentStep = isFirst ? getCurrentStepByExtractedInformation() : getCurrentStep()
         
         guard let currentStep else {
             push(SubmitStepScreen(flowController: self))
@@ -330,6 +344,20 @@ public final class FlowController {
     public func getCurrentStep() -> LocalStepModel? {
         let steps = LocalStepsObject.shared.get()
         return steps.first { $0.isDone == false }
+    }
+    
+    
+    func getCurrentStepByExtractedInformation() -> LocalStepModel? {
+        var steps = LocalStepsObject.shared.get()
+
+        for i in steps.indices {
+            guard steps[i].submitRequestModel?.extractedInformation.isEmpty == false else { break }
+            steps[i].isDone = true
+        }
+
+        LocalStepsObject.shared.set(steps)
+
+        return steps.first { $0.submitRequestModel!.extractedInformation.isEmpty }
     }
     
     public func makeCurrentStepDone(extractedInformation: [String: String],  timeStarted :String,) {
@@ -402,7 +430,30 @@ public final class FlowController {
     }
     
     public func backClick() {
-        setRoot(animated: true,isBack: true)
+        let hasHiddenSteps = LocalStepsObject.shared.get().filter {
+            $0.stepDefinition!.stepDefinition == StepsNames.split || $0.stepDefinition!.stepDefinition == StepsNames.dataRelay
+        }
+        
+        if(hasHiddenSteps.isEmpty){
+            
+            var steps = LocalStepsObject.shared.get()
+            guard let prvStepIndex = steps.lastIndex(where: { $0.isDone }) else {
+                return
+            }
+            var prvStep = steps[prvStepIndex]
+            if(prvStep.stepDefinition?.stepDefinition == StepsNames.blockLoader){
+                setRoot(animated: true,isBack: true,hasHiddenSteps:false)
+            }else{
+                steps[prvStepIndex].isDone = false
+                LocalStepsObject.shared.set(steps)
+                pop(animated: true);
+            }
+            
+        }else{
+            setRoot(animated: true,isBack: true,hasHiddenSteps:true)
+        }
+        
+       
     }
     
     

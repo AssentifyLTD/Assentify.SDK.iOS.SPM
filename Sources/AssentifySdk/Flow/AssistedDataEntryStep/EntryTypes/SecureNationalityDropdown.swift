@@ -48,6 +48,16 @@ public struct SecureNationalityDropdown: View {
             loadDefaultRawIfNeeded()
         }
     }
+    
+    private func setupObserver() {
+        NotificationCenter.default.addObserver(
+          forName: .baseShowMessageChanged,
+          object: nil,
+          queue: .main
+        ) { _ in
+          validate()
+        }
+      }
 
     public var body: some View {
         if self.field.isHidden == false {
@@ -100,6 +110,7 @@ public struct SecureNationalityDropdown: View {
                 }
             }
             .onAppear {
+                setupObserver()
                 loadDefaultRawIfNeeded()
                 validate()
             }

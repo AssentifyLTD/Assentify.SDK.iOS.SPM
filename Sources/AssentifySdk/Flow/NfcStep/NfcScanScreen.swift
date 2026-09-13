@@ -51,16 +51,16 @@ public struct NfcScanScreen: View {
     
     private func onBack() {
         commands.triggerClose += 1
-        self.flowController.backClick()
+        self.flowController.pop(animated: true)
     }
     
     private func onNext() {
         if(isComplete){
-            DispatchQueue.main.async { screenEvent = .idle }
+//            DispatchQueue.main.async { screenEvent = .idle }
             flowController.makeCurrentStepDone(extractedInformation: (dataIDModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
             flowController.naveToNextStep();
         }else{
-            DispatchQueue.main.async { screenEvent = .idle }
+//            DispatchQueue.main.async { screenEvent = .idle }
             flowController.makeCurrentStepDone(extractedInformation: (passportResponseModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
             flowController.naveToNextStep();
         }

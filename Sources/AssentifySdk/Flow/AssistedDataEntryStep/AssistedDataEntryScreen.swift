@@ -236,21 +236,27 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
                             
                             let islast = (currentPage == assistedDataEntryModel!.assistedDataEntryPages.count - 1)
                             if(assistedDataEntryModel!.assistedDataEntryPages[currentPage].isNormalClick || islast==false){
-                                BaseClickButton(
+                                BaseClickButtonAssistedDataEntry(
                                     title: assistedDataEntryModel!.assistedDataEntryPages[currentPage].nextButtonTitle,
                                     verticalPadding: 18,
-                                    enabled :AssistedFormHelper.validatePage(currentPage),
+                                    enabled : AssistedFormHelper.validatePage(currentPage),
 
                                 ) {
+                                    if(!AssistedFormHelper.validatePage(currentPage) && BaseTheme.baseValidationStyle == ValidationStyle.Asterisk){
+                                        BaseTheme.baseShowMessage = true
+                                    }
+                                    
                                     let last = (currentPage == assistedDataEntryModel!.assistedDataEntryPages.count - 1)
                                     if last {
                                         if(AssistedFormHelper.validatePage(currentPage)){
+                                            BaseTheme.baseShowMessage = false
                                             status = "Completed"
                                             onNext()
                                         }
                                       
                                     } else {
                                         if(AssistedFormHelper.validatePage(currentPage)){
+                                            BaseTheme.baseShowMessage = false
                                             currentPage += 1
                                         }
                                     }
@@ -258,24 +264,30 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 20)
                             }else{
-                                BaseSliderClick(
+                                BaseSliderClickAssistedDataEntry(
                                     onNext: {
+                                        if(!AssistedFormHelper.validatePage(currentPage) && BaseTheme.baseValidationStyle == ValidationStyle.Asterisk){
+                                            BaseTheme.baseShowMessage = true
+                                        }
+                                        
                                         let last = (currentPage == assistedDataEntryModel!.assistedDataEntryPages.count - 1)
                                         if last {
                                             if(AssistedFormHelper.validatePage(currentPage)){
+                                                BaseTheme.baseShowMessage = false
                                                 status = "Completed"
                                                 onNext()
                                             }
                                           
                                         } else {
                                             if(AssistedFormHelper.validatePage(currentPage)){
+                                                BaseTheme.baseShowMessage = false
                                                 currentPage += 1
                                             }
                                         }
                                     },
                                     label: assistedDataEntryModel!.assistedDataEntryPages[currentPage].nextButtonTitle,
                                     icon: "checkmark",
-                                    isActive: AssistedFormHelper.validatePage(currentPage),
+                                    isActive: true,
                                 ) .padding(.horizontal, 20)
                                 .padding(.bottom, 20)
                             }

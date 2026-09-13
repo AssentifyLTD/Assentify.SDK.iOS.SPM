@@ -490,3 +490,24 @@ public final class HasSubmittedObject {
         UserDefaults.standard.removeObject(forKey: key())
     }
 }
+
+
+public final class IsBackObject {
+    
+    public static let shared = IsBackObject()
+    private init() {}
+    
+    private var isBack: Bool?
+    
+    public func set(_ key: Bool) {
+        self.isBack = key
+    }
+    
+    public func get() -> Bool? {
+        return isBack
+    }
+    
+    public func clear() {
+        isBack = nil
+    }
+}
