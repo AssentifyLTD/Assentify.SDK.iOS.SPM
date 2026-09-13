@@ -1,5 +1,29 @@
 import SwiftUI
 
+
+private let outputFormat: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "dd/MM/yyyy"
+    formatter.locale = Locale.current
+    return formatter
+}()
+
+private func formatDateIfPossible(_ rawValue: String) -> String {
+    let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty { return rawValue }
+
+    let inputFormat = DateFormatter()
+    inputFormat.dateFormat = "yyyy/MM/dd"
+    inputFormat.locale = Locale.current
+    inputFormat.isLenient = false
+
+    if let parsedDate = inputFormat.date(from: rawValue) {
+        return outputFormat.string(from: parsedDate)
+    } else {
+        return rawValue
+    }
+}
+
 public struct OnCompleteScreen: View {
 
     let imageUrl: String
@@ -81,7 +105,16 @@ public struct OnCompleteScreen: View {
     // MARK: - Data
 
     private var extractedMap: [String: String]? {
-       return OnCompleteScreenData.shared.get()
+        var extractedMap: [String: String] = [:]
+        let onCompleteScreenData = OnCompleteScreenData.shared.get()!
+        for (key, value) in onCompleteScreenData {
+            if key.contains("Date") {
+                extractedMap[key] = formatDateIfPossible(value)
+            } else {
+                extractedMap[key] = value
+            }
+        }
+        return extractedMap
     }
 
     private var dataRows: [(label: String, value: String)] {

@@ -39,6 +39,17 @@ public struct SecureTextField: View {
         }
     }
 
+    
+    private func setupObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .baseShowMessageChanged,
+            object: nil,
+            queue: .main
+        ) { _ in
+            validate()
+        }
+    }
+    
     public var body: some View {
         if (self.field.isHidden == false){
             
@@ -103,6 +114,7 @@ public struct SecureTextField: View {
                 
             }
             .onAppear {
+                setupObserver()
                 // ✅ important: sync from field.value to local state
                 if let existing = field.value, !existing.isEmpty {
                     value = existing

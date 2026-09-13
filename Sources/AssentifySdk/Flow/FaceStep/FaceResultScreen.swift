@@ -193,13 +193,13 @@ public struct FaceResultScreen: View {
 
             } else {
 
-                BaseClickButton(
-                    title: FlowStrings.provideSupportingId,
-                    cornerRadius: 28,
-                    verticalPadding: 18,
-                    enabled: true,
-                    action: onIDChange,
-                )
+//                BaseClickButton(
+//                    title: FlowStrings.provideSupportingId,
+//                    cornerRadius: 28,
+//                    verticalPadding: 18,
+//                    enabled: true,
+//                    action: onIDChange,
+//                )
 
                 OutlineButton(
                     title: FlowStrings.overrideAndProceed,

@@ -36,6 +36,17 @@ public struct SecureTextArea: View {
             loadDefaultIfNeeded()
         }
     }
+    
+    
+    private func setupObserver() {
+        NotificationCenter.default.addObserver(
+          forName: .baseShowMessageChanged,
+          object: nil,
+          queue: .main
+        ) { _ in
+          validate()
+        }
+      }
 
     public var body: some View {
         if (self.field.isHidden == false){
@@ -95,6 +106,7 @@ public struct SecureTextArea: View {
                 
             }
             .onAppear {
+                setupObserver()
                 if let existing = field.value, !existing.isEmpty {
                     value = existing
                 }

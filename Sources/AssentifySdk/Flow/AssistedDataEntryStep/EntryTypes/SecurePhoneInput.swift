@@ -49,6 +49,16 @@ public struct SecurePhoneInput: View {
             setupDefaultsIfNeeded()
         }
     }
+    
+    private func setupObserver() {
+        NotificationCenter.default.addObserver(
+          forName: .baseShowMessageChanged,
+          object: nil,
+          queue: .main
+        ) { _ in
+          validate()
+        }
+      }
 
     public var body: some View {
         if self.field.isHidden == false {
@@ -100,6 +110,7 @@ public struct SecurePhoneInput: View {
             }
             .animation(.easeInOut(duration: 0.15), value: expanded)
             .onAppear {
+                setupObserver()
                 setupDefaultsIfNeeded()
                 handleValueChange()
             }

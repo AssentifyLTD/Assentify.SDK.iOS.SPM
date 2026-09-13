@@ -46,6 +46,16 @@ public struct SecureDateField: View {
         }
     }
 
+    private func setupObserver() {
+        NotificationCenter.default.addObserver(
+          forName: .baseShowMessageChanged,
+          object: nil,
+          queue: .main
+        ) { _ in
+          validate()
+        }
+      }
+    
     public var body: some View {
         if (self.field.isHidden == false){
             VStack(alignment: .leading, spacing: 6) {
@@ -106,6 +116,7 @@ public struct SecureDateField: View {
                 
             }
             .onAppear {
+                setupObserver()
                 // ✅ sync from field.value
                 if let existing = field.value, !existing.isEmpty {
                     value = existing
@@ -134,6 +145,30 @@ public struct SecureDateField: View {
     private var canPick: Bool {
         !((field.readOnly ?? false) || (getIsLocked()))
     }
+    
+    private let outputFormat: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        formatter.locale = Locale.current
+        return formatter
+    }()
+
+    private func formatDateIfPossible(_ rawValue: String) -> String {
+        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return rawValue }
+
+        let inputFormat = DateFormatter()
+        inputFormat.dateFormat = "yyyy/MM/dd"
+        inputFormat.locale = Locale.current
+        inputFormat.isLenient = false
+
+        if let parsedDate = inputFormat.date(from: rawValue) {
+            return outputFormat.string(from: parsedDate)
+        } else {
+            return rawValue
+        }
+    }
+    
 
     // MARK: - Default value
     private func loadDefaultIfNeeded(force: Bool = false) {
@@ -147,7 +182,7 @@ public struct SecureDateField: View {
             return
         }
 
-        let defaultValue = AssistedFormHelper.getDefaultValueValue(key, page, flowController: self.flowController) ?? ""
+        let defaultValue = formatDateIfPossible(AssistedFormHelper.getDefaultValueValue(key, page, flowController: self.flowController) ?? "")
 
         value = defaultValue
         field.value = defaultValue

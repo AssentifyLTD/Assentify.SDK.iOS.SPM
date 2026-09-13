@@ -8,11 +8,11 @@ struct StepCard: View {
     let unselectedColor: Color
     let onClick: () -> Void
 
-    private var backgroundColor: Color { step.isDone ? selectedColor : unselectedColor }
-    private var circleColor: Color { step.isDone ? .white : selectedColor }
-    private var iconColor: Color { step.isDone ? selectedColor : .white }
+    private var backgroundColor: Color {  (step.submitRequestModel?.extractedInformation.isEmpty == false) ? selectedColor : unselectedColor }
+    private var circleColor: Color { (step.submitRequestModel?.extractedInformation.isEmpty == false) ? .white : selectedColor }
+    private var iconColor: Color {  (step.submitRequestModel?.extractedInformation.isEmpty == false) ? selectedColor : .white }
     private var textColor: Color {
-        step.isDone ? Color(BaseTheme.baseSecondaryTextColor) : Color(BaseTheme.baseTextColor)
+        (step.submitRequestModel?.extractedInformation.isEmpty == false) ? Color(BaseTheme.baseSecondaryTextColor) : Color(BaseTheme.baseTextColor)
     }
 
     var body: some View {

@@ -78,7 +78,7 @@ public struct FaceMatchStep: View {
     }
 
     private func onNext() {
-        DispatchQueue.main.async { screenEvent = .idle }
+//        DispatchQueue.main.async { screenEvent = .idle }
         commands.triggerClose += 1
            guard
                let extractedModel = dataModel!.faceExtractedModel,

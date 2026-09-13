@@ -51,6 +51,16 @@ public struct SecureDropdownWithDataSource: View {
         }
     }
     
+    private func setupObserver() {
+        NotificationCenter.default.addObserver(
+          forName: .baseShowMessageChanged,
+          object: nil,
+          queue: .main
+        ) { _ in
+          validate()
+        }
+      }
+    
     public var body: some View {
         if self.field.isHidden == false {
             VStack(alignment: .leading, spacing: 6) {
@@ -115,6 +125,7 @@ public struct SecureDropdownWithDataSource: View {
                 }
             }
             .onAppear {
+                setupObserver()
                 validate()
                 loadDataSourceAndSelectDefault()
                 cancellable = FilterManager.shared.trigger
