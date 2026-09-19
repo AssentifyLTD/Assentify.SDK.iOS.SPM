@@ -44,7 +44,7 @@ public struct QrScanStep: View {
     private let timeStarted :String = getCurrentDateTimeForTracking();
     private var showResultPage: Bool = false
     private let selectedTemplate: Templates?
-
+    @State private var isNavigating: Bool = false
     public init(flowController: FlowController) {
         self.flowController = flowController
         self.selectedTemplate = SelectedTemplatesObject.shared.get()
@@ -71,11 +71,14 @@ public struct QrScanStep: View {
     }
 
     private func onNext() {
-//        DispatchQueue.main.async { screenEvent = .idle }
-        commands.triggerClose += 1
-
-        flowController.makeCurrentStepDone(extractedInformation: dataIDModel!.iDExtractedModel!.transformedProperties!,timeStarted: self.timeStarted)
-        flowController.naveToNextStep()
+        if (!isNavigating) {
+            isNavigating = true
+            //        DispatchQueue.main.async { screenEvent = .idle }
+            commands.triggerClose += 1
+            
+            flowController.makeCurrentStepDone(extractedInformation: dataIDModel!.iDExtractedModel!.transformedProperties!,timeStarted: self.timeStarted)
+            flowController.naveToNextStep()
+        }
     }
 
     public var body: some View {
@@ -242,7 +245,7 @@ public struct QrScanStep: View {
                          onBack()
                      }
             }
-        }
+        }.onAppear{ isNavigating = false}
         .animation(.easeInOut(duration: 0.2), value: start)
         .modifier(InterceptSystemBack(action: onBack))
     }

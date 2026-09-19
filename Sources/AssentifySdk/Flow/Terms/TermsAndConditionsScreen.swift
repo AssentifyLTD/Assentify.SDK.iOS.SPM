@@ -15,7 +15,7 @@ public struct TermsAndConditionsScreen: View {
     
     @State private var isLoading: Bool = true
     @State private var termsModel: TermsConditionsModel? = nil
-    
+    @State private var isNavigating: Bool = false
     @State private var showFullScreenPDF = false
     @State private var showShare = false
     @State private var shareItems: [Any] = []
@@ -49,15 +49,18 @@ public struct TermsAndConditionsScreen: View {
     
     
     private func onNext(value:Bool) {
-        if let step = flowController.getCurrentStep(),
-           let stepDefinition = step.stepDefinition,
-           let firstProperty = stepDefinition.outputProperties.first {
-            let confirmationKey = firstProperty.key
-            let extractedInformation: [String: String] = [
-                confirmationKey: String(describing: value)
-            ]
-            flowController.makeCurrentStepDone(extractedInformation:extractedInformation,timeStarted: self.timeStarted)
-            flowController.naveToNextStep()
+        if (!isNavigating) {
+            isNavigating = true
+            if let step = flowController.getCurrentStep(),
+               let stepDefinition = step.stepDefinition,
+               let firstProperty = stepDefinition.outputProperties.first {
+                let confirmationKey = firstProperty.key
+                let extractedInformation: [String: String] = [
+                    confirmationKey: String(describing: value)
+                ]
+                flowController.makeCurrentStepDone(extractedInformation:extractedInformation,timeStarted: self.timeStarted)
+                flowController.naveToNextStep()
+            }
         }
         
     }
@@ -170,7 +173,8 @@ public struct TermsAndConditionsScreen: View {
             .topBarBackLogo {
                 onBack()
             }
-        } .modifier(InterceptSystemBack(action: onBack))
+        } .onAppear{ isNavigating = false}
+            .modifier(InterceptSystemBack(action: onBack))
             .task { await loadTerms() }
             .sheet(isPresented: $showFullScreenPDF) {
                 FullScreenPDFView(urlString: termsModel?.data.file)

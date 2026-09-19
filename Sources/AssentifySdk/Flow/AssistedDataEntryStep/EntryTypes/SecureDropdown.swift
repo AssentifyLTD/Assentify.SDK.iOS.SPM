@@ -271,7 +271,7 @@ public struct SecureDropdown: View {
 
                                         Spacer()
 
-                                        if option == selected {
+                                        if option.lowercased() == selected.lowercased() {
                                             Image(systemName: "checkmark")
                                                 .foregroundColor(Color(BaseTheme.baseAccentColor))
                                         }
@@ -390,11 +390,14 @@ public struct SecureDropdown: View {
 
     private func applyAndPersist(_ newValue: String) {
         guard let key = field.inputKey else { return }
-        selected = newValue
-        field.value = newValue
-        AssistedFormHelper.changeValue(key, newValue, page)
-        onValueChange(newValue)
-        validate()
+        if options.map({ $0.lowercased() }).contains(newValue.lowercased()) {
+            selected = newValue
+            field.value = newValue
+            AssistedFormHelper.changeValue(key, newValue, page)
+            onValueChange(newValue)
+            validate()
+        }
+        
     }
 
     private func validate() {

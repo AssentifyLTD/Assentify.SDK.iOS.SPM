@@ -37,6 +37,7 @@ final class FaceMatchCommands: ObservableObject {
 
 public struct FaceMatchStep: View {
 
+    @State private var isNavigating: Bool = false
     @State private var start: Bool = false
     @State private var feedbackText: String = ""
     @State private var imageUrl: String = ""
@@ -78,46 +79,49 @@ public struct FaceMatchStep: View {
     }
 
     private func onNext() {
-//        DispatchQueue.main.async { screenEvent = .idle }
-        commands.triggerClose += 1
-           guard
-               let extractedModel = dataModel!.faceExtractedModel,
-               let rawOutputProps = extractedModel.outputProperties
-           else {
-               return
-           }
-           
-           var outputProps: [String: String] = rawOutputProps.mapValues {
-               String(describing: $0)
-           }
-           
-           IDImageObject.shared.clear()
-           
-           if let percentageMatch = extractedModel.percentageMatch,
-              percentageMatch <= 50 {
-               
-               if let skippedKey = outputProps.keys.first(where: {
-                   $0.contains("OnBoardMe_FaceImageAcquisition_IsSkippedStatus")
-               }) {
-                   outputProps[skippedKey] = "true"
-               }
-               
-           }
-        
-          if let key = outputProps.keys.first(where: {
-            $0.contains("OnBoardMe_FaceImageAcquisition_FaceAuthenticity")
-          }) {
-            if let value = outputProps[key] {
-                if value == "0" {
-                    outputProps[key] = "false"
-                } else if value == "1" {
-                    outputProps[key] = "true"
+        if (!isNavigating) {
+            isNavigating = true
+            //        DispatchQueue.main.async { screenEvent = .idle }
+            commands.triggerClose += 1
+            guard
+                let extractedModel = dataModel!.faceExtractedModel,
+                let rawOutputProps = extractedModel.outputProperties
+            else {
+                return
+            }
+            
+            var outputProps: [String: String] = rawOutputProps.mapValues {
+                String(describing: $0)
+            }
+            
+            IDImageObject.shared.clear()
+            
+            if let percentageMatch = extractedModel.percentageMatch,
+               percentageMatch <= 50 {
+                
+                if let skippedKey = outputProps.keys.first(where: {
+                    $0.contains("OnBoardMe_FaceImageAcquisition_IsSkippedStatus")
+                }) {
+                    outputProps[skippedKey] = "true"
+                }
+                
+            }
+            
+            if let key = outputProps.keys.first(where: {
+                $0.contains("OnBoardMe_FaceImageAcquisition_FaceAuthenticity")
+            }) {
+                if let value = outputProps[key] {
+                    if value == "0" {
+                        outputProps[key] = "false"
+                    } else if value == "1" {
+                        outputProps[key] = "true"
+                    }
                 }
             }
-           }
-        
-           flowController.makeCurrentStepDone(extractedInformation: outputProps,timeStarted: self.timeStarted)
-           flowController.naveToNextStep()
+            
+            flowController.makeCurrentStepDone(extractedInformation: outputProps,timeStarted: self.timeStarted)
+            flowController.naveToNextStep()
+        }
     }
 
     public var body: some View {
@@ -416,7 +420,7 @@ public struct FaceMatchStep: View {
                          onBack()
                      }
             }
-        }
+        }.onAppear{ isNavigating = false}
         .animation(.easeInOut(duration: 0.2), value: start)
         .modifier(InterceptSystemBack(action: onBack))
     }

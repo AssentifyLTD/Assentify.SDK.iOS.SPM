@@ -11,6 +11,10 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
 
     public func onAssistedDataEntrySuccess(assistedDataEntryModel: AssistedDataEntryModel) {
         DispatchQueue.main.async {
+            
+          
+    
+            
             if(AssistedDataEntryPagesObjectJson.shared.get(stepId: (flowController.getCurrentStep()?.stepDefinition!.stepId)!) == nil){
                 AssistedDataEntryPagesObject.shared.clear()
                 AssistedDataEntryPagesObject.shared.set(assistedDataEntryModel)
@@ -20,9 +24,20 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
             }else{
                 AssistedDataEntryPagesObject.shared.clear()
                 AssistedDataEntryPagesObject.shared.set(AssistedDataEntryPagesObjectJson.shared.get(stepId: (flowController.getCurrentStep()?.stepDefinition!.stepId)!)!)
-                self.isLoading = false
-                self.isError = false
-                self.assistedDataEntryModel = AssistedDataEntryPagesObjectJson.shared.get(stepId: (flowController.getCurrentStep()?.stepDefinition!.stepId)!)
+                if(AssistedFormHelper.checkIfAnyDefaultValueChanged(flowController: flowController)){
+                    AssistedDataEntryPagesObjectJson.shared.set(nil, stepId: (flowController.getCurrentStep()?.stepDefinition!.stepId)!);
+                    AssistedDataEntryPagesObject.shared.clear()
+                    AssistedDataEntryPagesObject.shared.set(assistedDataEntryModel)
+                    self.isLoading = false
+                    self.isError = false
+                    self.assistedDataEntryModel = assistedDataEntryModel
+                }else{
+                    AssistedDataEntryPagesObject.shared.clear()
+                    AssistedDataEntryPagesObject.shared.set(AssistedDataEntryPagesObjectJson.shared.get(stepId: (flowController.getCurrentStep()?.stepDefinition!.stepId)!)!)
+                    self.isLoading = false
+                    self.isError = false
+                    self.assistedDataEntryModel = AssistedDataEntryPagesObjectJson.shared.get(stepId: (flowController.getCurrentStep()?.stepDefinition!.stepId)!)
+                }
             }
           
         }
@@ -32,6 +47,7 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
     private let steps = LocalStepsObject.shared.get()
     private let timeStarted :String = getCurrentDateTimeForTracking();
 
+    @State private var isNavigating: Bool = false
     @State private var isLoading: Bool = true
     @State private var isError: Bool = false
     @State private var assistedDataEntryModel: AssistedDataEntryModel? = nil
@@ -88,95 +104,99 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
     
     private func onNext(){
 
-        var extractedInformation: [String: String] = [:]
-        guard let model = AssistedDataEntryPagesObject.shared.get() else {
-            fatalError("AssistedDataEntry model is nil")
-        }
+        if (!isNavigating) {
+            isNavigating = true
+            var extractedInformation: [String: String] = [:]
+            guard let model = AssistedDataEntryPagesObject.shared.get() else {
+                fatalError("AssistedDataEntry model is nil")
+            }
 
-        let pages = model.assistedDataEntryPages
+            let pages = model.assistedDataEntryPages
 
-        for (index, page) in pages.enumerated() {
-            for element in page.dataEntryPageElements {
+            for (index, page) in pages.enumerated() {
+                for element in page.dataEntryPageElements {
 
-                let key = element.inputKey
-                let isDirtyKey = element.isDirtyKey
-                let value = element.value ?? ""
-                let fieldType = InputTypes.fromString(element.inputType)
-                let phonePrefix = (element.defaultCountryCode ?? "")
-                let phoneFullValue = phonePrefix + value
-                let currentStep = flowController.getCurrentStep()
+                    let key = element.inputKey
+                    let isDirtyKey = element.isDirtyKey
+                    let value = element.value ?? ""
+                    let fieldType = InputTypes.fromString(element.inputType)
+                    let phonePrefix = (element.defaultCountryCode ?? "")
+                    let phoneFullValue = phonePrefix + value
+                    let currentStep = flowController.getCurrentStep()
 
-                if let key, !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                   !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    if let key, !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 
-                    if fieldType == .phoneNumber {
-                        extractedInformation[key] = phoneFullValue
-                        for property in currentStep!.stepDefinition!.outputProperties {
-                            if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
-                                let country = allCountries.first { $0.dialCode == element.defaultCountryCode }!
-                                
-                                if property.key.hasSuffix("Number") {
-                                    extractedInformation[property.key] = value
-                                }
-                                if property.key.hasSuffix("Code") {
-                                    extractedInformation[property.key] = element.defaultCountryCode!
-                                }
-                                if property.key.hasSuffix("Iso2") {
-                                    extractedInformation[property.key] = country.code2
-                                }
-                                if property.key.hasSuffix("Iso3") {
-                                    extractedInformation[property.key] = country.code3
+                        if fieldType == .phoneNumber {
+                            extractedInformation[key] = phoneFullValue
+                            for property in currentStep!.stepDefinition!.outputProperties {
+                                if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
+                                    let country = allCountries.first { $0.dialCode == element.defaultCountryCode }!
+                                    
+                                    if property.key.hasSuffix("Number") {
+                                        extractedInformation[property.key] = value
+                                    }
+                                    if property.key.hasSuffix("Code") {
+                                        extractedInformation[property.key] = element.defaultCountryCode!
+                                    }
+                                    if property.key.hasSuffix("Iso2") {
+                                        extractedInformation[property.key] = country.code2
+                                    }
+                                    if property.key.hasSuffix("Iso3") {
+                                        extractedInformation[property.key] = country.code3
+                                    }
                                 }
                             }
-                        }
-                    } else if fieldType == .phoneNumberWithOTP {
-                        extractedInformation[key] = value
-                        for property in currentStep!.stepDefinition!.outputProperties {
-                            if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
-                                let country = allCountries.first { $0.dialCode == "+961" }!
-                                
-                                if property.key.hasSuffix("Number") {
-                                    extractedInformation[property.key] = value.hasPrefix("+961") ? String(value.dropFirst(4)) : value
-                                }
-                                if property.key.hasSuffix("Code") {
-                                    extractedInformation[property.key] = "+961"
-                                }
-                                if property.key.hasSuffix("Iso2") {
-                                    extractedInformation[property.key] = country.code2
-                                }
-                                if property.key.hasSuffix("Iso3") {
-                                    extractedInformation[property.key] = country.code3
+                        } else if fieldType == .phoneNumberWithOTP {
+                            extractedInformation[key] = value
+                            for property in currentStep!.stepDefinition!.outputProperties {
+                                if property.key != key && property.key.hasPrefix(key.components(separatedBy: "_").first ?? key) {
+                                    let country = allCountries.first { $0.dialCode == "+961" }!
+                                    
+                                    if property.key.hasSuffix("Number") {
+                                        extractedInformation[property.key] = value.hasPrefix("+961") ? String(value.dropFirst(4)) : value
+                                    }
+                                    if property.key.hasSuffix("Code") {
+                                        extractedInformation[property.key] = "+961"
+                                    }
+                                    if property.key.hasSuffix("Iso2") {
+                                        extractedInformation[property.key] = country.code2
+                                    }
+                                    if property.key.hasSuffix("Iso3") {
+                                        extractedInformation[property.key] = country.code3
+                                    }
                                 }
                             }
+                        }  else {
+                            extractedInformation[key] = value
                         }
-                    }  else {
-                        extractedInformation[key] = value
                     }
-                }
 
-                if let dirtyKey = isDirtyKey, !dirtyKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                   !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    let defultValue = AssistedFormHelper.getDefaultValueValueToCheckIsDirty(key!, index, flowController: flowController)
-               
-                    if(defultValue == value){
-                        extractedInformation[dirtyKey] = "false"
-                    }else{
-                        extractedInformation[dirtyKey] = "true"
+                    if let dirtyKey = isDirtyKey, !dirtyKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                       !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        let defultValue = AssistedFormHelper.getDefaultValueValueToCheckIsDirty(key!, index, flowController: flowController)
+                   
+                        if(defultValue == value){
+                            extractedInformation[dirtyKey] = "false"
+                        }else{
+                            extractedInformation[dirtyKey] = "true"
+                        }
                     }
-                }
 
-                if let dataSourceValues = element.dataSourceValues, !dataSourceValues.isEmpty {
-                    for (k, v) in dataSourceValues {
-                        extractedInformation[k] = v
+                    if let dataSourceValues = element.dataSourceValues, !dataSourceValues.isEmpty {
+                        for (k, v) in dataSourceValues {
+                            extractedInformation[k] = v
+                        }
                     }
                 }
             }
+            
+            
+            
+            flowController.makeCurrentStepDone(extractedInformation: extractedInformation,timeStarted: self.timeStarted)
+            flowController.naveToNextStep();
         }
-        
-        
-        
-        flowController.makeCurrentStepDone(extractedInformation: extractedInformation,timeStarted: self.timeStarted)
-        flowController.naveToNextStep();
+       
         
     }
 
@@ -306,7 +326,11 @@ public struct AssistedDataEntryScreen: View, AssistedDataEntryDelegate {
             callTrackProgress()
         }
         .modifier(InterceptSystemBack(action: onBack))
-        .task { startIfNeeded() }
+        .onAppear {
+            didStart = false
+            isNavigating = false
+            startIfNeeded()
+        }
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
