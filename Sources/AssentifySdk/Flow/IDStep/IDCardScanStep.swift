@@ -58,7 +58,7 @@ public struct IDCardScanStep: View {
     
     private var showResultPage: Bool = false
     private let selectedTemplate: Templates?
-    
+    @State private var isNavigating: Bool = false
     public init(flowController: FlowController) {
         self.flowController = flowController
         self.selectedTemplate = SelectedTemplatesObject.shared.get();
@@ -107,15 +107,18 @@ public struct IDCardScanStep: View {
     }
     
     private func onNext() {
-//        DispatchQueue.main.async { screenEvent = .idle }
-        commands.triggerClose += 1
-        
-        if (FlowEnvironmentalConditionsObject.shared.get()!.enableQr && kycDocumentDetails
-            .first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })!.hasQrCode) {
-            self.flowController.push(HowToCaptureQrScreen(flowController: self.flowController))
-        } else {
-            flowController.makeCurrentStepDone(extractedInformation: extractedInformation,timeStarted: self.timeStarted)
-            flowController.naveToNextStep();
+        if (!isNavigating) {
+            isNavigating = true
+            //        DispatchQueue.main.async { screenEvent = .idle }
+            commands.triggerClose += 1
+            
+            if (FlowEnvironmentalConditionsObject.shared.get()!.enableQr && kycDocumentDetails
+                .first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })!.hasQrCode) {
+                self.flowController.push(HowToCaptureQrScreen(flowController: self.flowController))
+            } else {
+                flowController.makeCurrentStepDone(extractedInformation: extractedInformation,timeStarted: self.timeStarted)
+                flowController.naveToNextStep();
+            }
         }
         
     }
@@ -527,6 +530,7 @@ public struct IDCardScanStep: View {
                      }
             }
         }
+        .onAppear{ isNavigating = false}
         .animation(.easeInOut(duration: 0.2), value: start)
         .modifier(InterceptSystemBack(action: onBack)).onAppear {
             if templatesByCountry == nil {

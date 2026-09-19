@@ -279,10 +279,39 @@ private struct OutlineButton: View {
     let borderColor: Color
     let textColor: Color
     let height: CGFloat
+    let reactivationDelay: TimeInterval
     let action: () -> Void
 
+    @State private var isProcessing: Bool = false
+
+    init(
+        title: String,
+        cornerRadius: CGFloat,
+        borderColor: Color,
+        textColor: Color,
+        height: CGFloat,
+        reactivationDelay: TimeInterval = 1.0,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.cornerRadius = cornerRadius
+        self.borderColor = borderColor
+        self.textColor = textColor
+        self.height = height
+        self.reactivationDelay = reactivationDelay
+        self.action = action
+    }
+
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            guard !isProcessing else { return }
+            isProcessing = true
+            action()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + reactivationDelay) {
+                isProcessing = false
+            }
+        }) {
             Text(title)
                 .font(.system(size: 16, weight: BaseTheme.baseClickFontWeight))
                 .foregroundColor(textColor)
@@ -295,5 +324,9 @@ private struct OutlineButton: View {
                 .stroke(borderColor, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+        .disabled(isProcessing)
+        .onAppear {
+            isProcessing = false
+        }
     }
 }

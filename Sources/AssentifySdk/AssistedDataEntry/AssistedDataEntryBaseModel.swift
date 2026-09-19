@@ -51,6 +51,7 @@ public struct AssistedDataEntryPage: Codable {
 
 public struct DataEntryPageElement: Codable {
     public var value: String?
+    public var prvDefaultValue: String?
     public var isLocalOtpValid: Bool = false
     public var dataSourceValues: [String: String]? = [:]
 
@@ -102,7 +103,7 @@ public struct DataEntryPageElement: Codable {
     public let whatsappProvider: Int?
 
     enum CodingKeys: String, CodingKey {
-        case value, isLocalOtpValid, dataSourceValues
+        case value,prvDefaultValue, isLocalOtpValid, dataSourceValues
         case elementIdentifier, endpointId, dataSourceId, inputType, sizeByRows, textTitle, inputKey, isDirtyKey
         case mandatory, allowAssistedEntry, sourceKStep, dataKeys, linkedControls, applyRegex, languageTransformation
         case targetOutputLanguage, regexDescriptor, regexErrorMessage, showBasedOnParent, dataSourceType, enableDatePicker
@@ -115,6 +116,7 @@ public struct DataEntryPageElement: Codable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
 
         value = try c.decodeIfPresent(String.self, forKey: .value)
+        prvDefaultValue = try c.decodeIfPresent(String.self, forKey: .prvDefaultValue)
         isLocalOtpValid = try c.decodeIfPresent(Bool.self, forKey: .isLocalOtpValid) ?? false
         dataSourceValues = try c.decodeIfPresent([String: String].self, forKey: .dataSourceValues) ?? [:]
 

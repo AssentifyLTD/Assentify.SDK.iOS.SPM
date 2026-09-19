@@ -35,7 +35,7 @@ public struct NfcScanScreen: View {
     private var assentifySdk = AssentifySdkObject.shared.get()
     private let flowController: FlowController
     private var showResultPage = false
-    
+    @State private var isNavigating: Bool = false
     private var passportResponseModel: PassportResponseModel? {
         return  NfcPassportResponseModelObject.shared.get()
     }
@@ -55,14 +55,17 @@ public struct NfcScanScreen: View {
     }
     
     private func onNext() {
-        if(isComplete){
-//            DispatchQueue.main.async { screenEvent = .idle }
-            flowController.makeCurrentStepDone(extractedInformation: (dataIDModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
-            flowController.naveToNextStep();
-        }else{
-//            DispatchQueue.main.async { screenEvent = .idle }
-            flowController.makeCurrentStepDone(extractedInformation: (passportResponseModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
-            flowController.naveToNextStep();
+        if (!isNavigating) {
+            isNavigating = true
+            if(isComplete){
+                //            DispatchQueue.main.async { screenEvent = .idle }
+                flowController.makeCurrentStepDone(extractedInformation: (dataIDModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
+                flowController.naveToNextStep();
+            }else{
+                //            DispatchQueue.main.async { screenEvent = .idle }
+                flowController.makeCurrentStepDone(extractedInformation: (passportResponseModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
+                flowController.naveToNextStep();
+            }
         }
      
     }
@@ -133,7 +136,7 @@ public struct NfcScanScreen: View {
                 )
                 
             }.topBarBackLogo { onBack() }
-        }.modifier(InterceptSystemBack(action: onBack))
+        }.onAppear{ isNavigating = false}.modifier(InterceptSystemBack(action: onBack))
         
     }
 }

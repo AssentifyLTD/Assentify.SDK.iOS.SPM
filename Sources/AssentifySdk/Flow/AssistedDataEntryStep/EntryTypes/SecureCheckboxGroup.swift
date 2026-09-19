@@ -55,7 +55,7 @@ public struct SecureCheckboxGroup: View {
                 // MARK: - Options container
                 VStack(spacing: 0) {
                     ForEach(options, id: \.self) { option in
-                        let isChecked = selected.contains(option)
+                        let isChecked = selected.contains { $0.caseInsensitiveCompare(option) == .orderedSame }
 
                         HStack(alignment: .top, spacing: 6) {
 
@@ -175,9 +175,19 @@ public struct SecureCheckboxGroup: View {
         }
 
         let raw = AssistedFormHelper.getDefaultValueValue(key, page, flowController: flowController) ?? ""
-        selected = parseSelected(raw)
-        field.value = raw
-        AssistedFormHelper.changeValue(key, raw, page)
+        
+        let lowercasedOptions = Set(options.map { $0.lowercased() })
+
+        let filteredRaw = raw
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && lowercasedOptions.contains($0.lowercased()) }
+            .joined(separator: ",")
+        
+        
+        selected = parseSelected(filteredRaw)
+        field.value = filteredRaw
+        AssistedFormHelper.changeValue(key, filteredRaw, page)
         onValueChange(Array(selected))
         validate()
     }

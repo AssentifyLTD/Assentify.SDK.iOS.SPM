@@ -273,7 +273,7 @@ public struct MultipleFilesContextAwareScreen: View, ContextAwareDelegate {
     @State private var verifyOtpRequestOtpModel: VerifyOtpRequestOtpModel? = nil
 
     @State private var contextAwareSigning: ContextAwareSigning? = nil
-
+    @State private var isNavigating: Bool = false
     private let timeStarted: String = getCurrentDateTimeForTracking()
     private var defaultTitle: String = ""
     private let configModel = ConfigModelObject.shared.get()
@@ -365,20 +365,23 @@ public struct MultipleFilesContextAwareScreen: View, ContextAwareDelegate {
     }
 
     private func onNext() {
-        var extractedInformation: [String: String] = [:]
-
-        let outputProperties = flowController.getCurrentStep()?.stepDefinition?.outputProperties ?? []
-        for outputProperty in outputProperties {
-            if outputProperty.key.contains("OnBoardMe_ContextAwareSigning_DocumentURL") {
-                extractedInformation[outputProperty.key] = documentWithTokensAndSigned.first?.signatureResponseModel.signedDocumentUri ?? ""
+        if (!isNavigating) {
+            isNavigating = true
+            var extractedInformation: [String: String] = [:]
+            
+            let outputProperties = flowController.getCurrentStep()?.stepDefinition?.outputProperties ?? []
+            for outputProperty in outputProperties {
+                if outputProperty.key.contains("OnBoardMe_ContextAwareSigning_DocumentURL") {
+                    extractedInformation[outputProperty.key] = documentWithTokensAndSigned.first?.signatureResponseModel.signedDocumentUri ?? ""
+                }
             }
+            
+            flowController.makeCurrentStepDone(
+                extractedInformation: extractedInformation,
+                timeStarted: self.timeStarted
+            )
+            flowController.naveToNextStep()
         }
-
-        flowController.makeCurrentStepDone(
-            extractedInformation: extractedInformation,
-            timeStarted: self.timeStarted
-        )
-        flowController.naveToNextStep()
     }
 
     private func onCreateUserDocumentResponseModel(_ template: SelectedTemplatesTokens) {
@@ -861,7 +864,7 @@ public struct MultipleFilesContextAwareScreen: View, ContextAwareDelegate {
                 }
             }
             .topBarBackLogo { onBack() }
-        }
+        }.onAppear{ isNavigating = false}
         .sheet(item: $shareFile) { file in
             ShareSheet(items: [file.url])
         }

@@ -6,32 +6,45 @@ public struct BaseClickButton: View {
     public let cornerRadius: CGFloat
     public let verticalPadding: CGFloat
     public let enabled: Bool
+    public let reactivationDelay: TimeInterval
     public let action: () -> Void
+    
+    @State private var isProcessing: Bool = false
     
     public init(
         title: String = "Next",
         cornerRadius: CGFloat = 28,
         verticalPadding: CGFloat = 15,
         enabled: Bool = true,
+        reactivationDelay: TimeInterval = 1.0,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.cornerRadius = cornerRadius
         self.verticalPadding = verticalPadding
         self.enabled = enabled
+        self.reactivationDelay = reactivationDelay
         self.action = action
+    }
+    
+    private var isEffectivelyEnabled: Bool {
+        enabled && !isProcessing
     }
     
     public var body: some View {
         Button(action: {
-            if enabled {
-                action()
+            guard isEffectivelyEnabled else { return }
+            isProcessing = true
+            action()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + reactivationDelay) {
+                isProcessing = false
             }
         }) {
             Text(title)
                 .font(.system(size: 16, weight: BaseTheme.baseClickFontWeight)) // ← uses param
                 .foregroundColor(
-                    enabled
+                    isEffectivelyEnabled
                     ? Color(BaseTheme.baseSecondaryTextColor)
                     : Color(BaseTheme.baseTextColor).opacity(0.6)
                 )
@@ -40,7 +53,7 @@ public struct BaseClickButton: View {
         }
         .background(
             Group {
-                if enabled,
+                if isEffectivelyEnabled,
                    let click = BaseTheme.baseClickColor {
                     click.toSwiftUIBackground()
                 } else {
@@ -49,11 +62,13 @@ public struct BaseClickButton: View {
             }
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-        .opacity(enabled ? 1.0 : 0.85)
-        .disabled(!enabled)
+        .opacity(isEffectivelyEnabled ? 1.0 : 0.85)
+        .disabled(!isEffectivelyEnabled)
+        .onAppear {
+            isProcessing = false
+        }
     }
 }
-
 
 public struct BaseClickButtonAssistedDataEntry: View {
     
@@ -61,25 +76,36 @@ public struct BaseClickButtonAssistedDataEntry: View {
     public let cornerRadius: CGFloat
     public let verticalPadding: CGFloat
     public let enabled: Bool
+    public let reactivationDelay: TimeInterval
     public let action: () -> Void
+    
+    @State private var isProcessing: Bool = false
     
     public init(
         title: String = "Next",
         cornerRadius: CGFloat = 28,
         verticalPadding: CGFloat = 15,
         enabled: Bool = true,
+        reactivationDelay: TimeInterval = 1.0,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.cornerRadius = cornerRadius
         self.verticalPadding = verticalPadding
         self.enabled = enabled
+        self.reactivationDelay = reactivationDelay
         self.action = action
     }
     
     public var body: some View {
         Button(action: {
-                action()
+            guard !isProcessing else { return }
+            isProcessing = true
+            action()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + reactivationDelay) {
+                isProcessing = false
+            }
         }) {
             Text(title)
                 .font(.system(size: 16, weight: BaseTheme.baseClickFontWeight)) // ← uses param
@@ -103,5 +129,9 @@ public struct BaseClickButtonAssistedDataEntry: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
         .opacity(enabled ? 1.0 : 0.85)
+        .disabled(isProcessing)
+        .onAppear {
+            isProcessing = false
+        }
     }
 }

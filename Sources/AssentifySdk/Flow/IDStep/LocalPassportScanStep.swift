@@ -13,7 +13,7 @@ public struct LocalPassportScanStep: View {
     @State private var uploadProgress: Int = 0
     @State private var screenEvent: PassportScreenEvent = .idle
     private let timeStarted :String = getCurrentDateTimeForTracking();
-    
+    @State private var isNavigating: Bool = false
     private var assentifySdk = AssentifySdkObject.shared.get()
     private let flowController: FlowController
     private var showResultPage = false
@@ -42,15 +42,18 @@ public struct LocalPassportScanStep: View {
     }
     
     private func onNext() {
-//        DispatchQueue.main.async {
-//            screenEvent = .idle
-//        }
-        commands.triggerClose += 1
-        if(FlowEnvironmentalConditionsObject.shared.get()!.enableNfc){
-            self.flowController.push(NfcScanScreen(flowController: self.flowController))
-        }else{
-            flowController.makeCurrentStepDone(extractedInformation: (dataIDModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
-            flowController.naveToNextStep();
+        if (!isNavigating) {
+            isNavigating = true
+            //        DispatchQueue.main.async {
+            //            screenEvent = .idle
+            //        }
+            commands.triggerClose += 1
+            if(FlowEnvironmentalConditionsObject.shared.get()!.enableNfc){
+                self.flowController.push(NfcScanScreen(flowController: self.flowController))
+            }else{
+                flowController.makeCurrentStepDone(extractedInformation: (dataIDModel?.passportExtractedModel!.transformedProperties)!,timeStarted: self.timeStarted)
+                flowController.naveToNextStep();
+            }
         }
     }
     
@@ -369,6 +372,7 @@ public struct LocalPassportScanStep: View {
                      }
             }
         }
+        .onAppear{ isNavigating = false}
         .animation(.easeInOut(duration: 0.2), value: start)
         .modifier(InterceptSystemBack(action: onBack))
         

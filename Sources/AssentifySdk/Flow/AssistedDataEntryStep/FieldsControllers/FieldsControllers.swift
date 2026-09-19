@@ -58,6 +58,61 @@ public enum AssistedFormHelper {
         return defaultValue
     }
     
+    
+    public static func checkIfAnyDefaultValueChanged(
+        flowController: FlowController
+    ) -> Bool {
+
+        guard let model = AssistedDataEntryPagesObject.shared.get() else {
+            return false
+        }
+
+        let doneList = flowController.getAllDoneSteps()
+
+        for page in model.assistedDataEntryPages {
+            for field in page.dataEntryPageElements {
+
+                guard let identifiers = field.inputPropertyIdentifierList, !identifiers.isEmpty else {
+                    // No identifiers -> skip this field, check the next one
+                    continue
+                }
+
+                var defaultValue = ""
+
+                for step in doneList {
+                    guard let outputProps = step.stepDefinition?.customization.outputProperties else {
+                        continue
+                    }
+                    let extractedInfo = step.submitRequestModel?.extractedInformation ?? [:]
+
+                    for keyID in identifiers {
+                        for outputProperty in outputProps where outputProperty.keyIdentifier == keyID {
+                            if let value = extractedInfo[outputProperty.key] {
+                                if defaultValue.isEmpty {
+                                    defaultValue = value
+                                } else {
+                                    defaultValue += ",\(value)"
+                                }
+                            }
+                        }
+                    }
+                }
+
+                guard let prvDefaultValue = field.prvDefaultValue else {
+                    // No previous value to compare against -> skip this field
+                    continue
+                }
+
+                if defaultValue != prvDefaultValue.description {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+    
+    
     // MARK: Default Value
     public static func getDefaultValueValue(
         _ key: String,
@@ -115,12 +170,12 @@ public enum AssistedFormHelper {
         }
         
         // Kotlin updates model too
-        changeValue(key, defaultValue, page)
+        changeValue(key, defaultValue, page,_prvDefaultValue: defaultValue)
         return defaultValue
     }
     
     // MARK: Change Value (+ Children)
-    public static func changeValue(_ key: String, _ value: String, _ page: Int) {
+    public static func changeValue(_ key: String, _ value: String, _ page: Int,_prvDefaultValue:String = "") {
         guard var model = AssistedDataEntryPagesObject.shared.get() else { return }
         guard model.assistedDataEntryPages.indices.contains(page) else { return }
 
@@ -160,6 +215,9 @@ public enum AssistedFormHelper {
 
         if let finalIdx = model.assistedDataEntryPages[page].dataEntryPageElements.firstIndex(where: { $0.elementIdentifier == parentIdentifier }) {
             model.assistedDataEntryPages[page].dataEntryPageElements[finalIdx].value = value
+            if(!_prvDefaultValue.isEmpty && ((model.assistedDataEntryPages[page].dataEntryPageElements[finalIdx].prvDefaultValue?.isEmpty) == nil)){
+                model.assistedDataEntryPages[page].dataEntryPageElements[finalIdx].prvDefaultValue = _prvDefaultValue
+             }
         }
 
         AssistedDataEntryPagesObject.shared.set(model)
