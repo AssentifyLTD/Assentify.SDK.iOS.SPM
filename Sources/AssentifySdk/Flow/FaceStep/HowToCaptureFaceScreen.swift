@@ -64,7 +64,7 @@ public struct HowToCaptureFaceScreen: View {
         let trimmed = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        // If it's a local file path, support it too
+        // Local file path
         if trimmed.hasPrefix("/") {
             let fileURL = URL(fileURLWithPath: trimmed)
             return await base64FromFile(fileURL)
@@ -72,15 +72,23 @@ public struct HowToCaptureFaceScreen: View {
 
         guard let url = URL(string: trimmed) else { return nil }
 
-        // local file:// url
+        // Local file:// URL
         if url.isFileURL {
             return await base64FromFile(url)
         }
 
-        // remote http/https
+        // Remote http/https
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
-            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            if let apiKey = ApiKeyObject.shared.get() {
+                request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+            }
+
+            let (data, response) = try await BlobSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse,
+                  (200...299).contains(http.statusCode),
+                  !data.isEmpty else {
                 return nil
             }
             return data.base64EncodedString()

@@ -44,30 +44,26 @@ class RemoteProcessing {
         appConfiguration: ConfigModel,
         stepIdString: String,
         selfieImage: Data,
-        livenessFrames:  [Data],
-        secondImage:Data,
-        isLivenessEnabled:Bool,
+        livenessFrames: [Data],
+        secondImage: Data,
+        isLivenessEnabled: Bool,
         retryCount: Int,
         isManualCapture: Bool,
         isAutoCapture: Bool,
         connectionId: String,
         onProgress: ((Double) -> Void)? = nil,
         completion: @escaping (BaseResult<RemoteProcessingModel?, Error>) -> Void
-        
     ) {
         let traceIdentifier = UUID().uuidString
-        let urlString = url
-        guard let url = URL(string: urlString) else {
+        guard let requestUrl = URL(string: url) else {
             completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
             return
         }
-        
-        var request = URLRequest(url: url)
+
+        var request = URLRequest(url: requestUrl)
         request.httpMethod = "POST"
         request.timeoutInterval = 120
-        
-        
-        
+
         request.setValue(stepIdString, forHTTPHeaderField: "x-step-id")
         request.setValue(appConfiguration.blockIdentifier, forHTTPHeaderField: "x-block-identifier")
         request.setValue(appConfiguration.flowIdentifier, forHTTPHeaderField: "x-flow-identifier")
@@ -75,36 +71,28 @@ class RemoteProcessing {
         request.setValue(appConfiguration.instanceHash, forHTTPHeaderField: "x-instance-hash")
         request.setValue(appConfiguration.instanceId, forHTTPHeaderField: "x-instance-id")
         request.setValue(appConfiguration.tenantIdentifier, forHTTPHeaderField: "x-tenant-identifier")
-        
-        
-        
-        
+
         let boundary = "Boundary-\(UUID().uuidString)"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        
-        
-        let tryNumber = retryCount+1;
-        var formData : [String: Any]  = [
+
+        let formData: [String: Any] = [
             "tenantId": appConfiguration.tenantIdentifier,
             "blockId": appConfiguration.blockIdentifier,
             "instanceId": appConfiguration.instanceId,
             "isMobile": true,
             "IsLivenessEnabled": isLivenessEnabled,
             "callerConnectionId": connectionId,
-            "IsManualCapture":String(isManualCapture),
-            "IsAutoCapture":String(isAutoCapture),
-            "TryNumber":String(tryNumber),
+            "IsManualCapture": String(isManualCapture),
+            "IsAutoCapture": String(isAutoCapture),
+            "TryNumber": String(retryCount + 1),
             "traceIdentifier": traceIdentifier,
         ]
-        
-        
-        
+
         var files: [(name: String, filename: String, mimeType: String, data: Data)] = [
             ("selfieImage", "selfieImage.jpg", "image/jpeg", selfieImage),
             ("secondImage", "secondImage.jpg", "image/jpeg", secondImage)
         ]
-        
+
         if !livenessFrames.isEmpty {
             files += datasToMultipartFiles(
                 livenessFrames,
@@ -113,61 +101,59 @@ class RemoteProcessing {
                 mimeType: "image/jpeg"
             )
         }
-        
-        
+
         let body = createMultipartBodyFace(
             parameters: formData,
             files: files,
             boundary: boundary
         )
-      
+
         let delegate = UploadDelegate()
         delegate.onProgress = { progress in
-            onProgress!(progress)
-            
+            onProgress?(progress)
         }
-        
-        
-      
-        
+
         let session = URLSession(configuration: .default, delegate: delegate, delegateQueue: .main)
-        
+
         let task = session.uploadTask(with: request, from: body) { data, response, error in
             session.finishTasksAndInvalidate()
-            
+
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
             guard let httpResponse = response as? HTTPURLResponse else {
                 completion(.failure(NSError(domain: "Invalid response", code: 0, userInfo: nil)))
                 return
             }
-            
-            
-            if(httpResponse.statusCode == 200){
-                guard let responseData = data else {
-                    completion(BaseResult.failure(NSError(domain: "No data", code: 0, userInfo: nil)))
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                let message = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+                completion(.failure(NSError(domain: "Invalid response",
+                                            code: httpResponse.statusCode,
+                                            userInfo: [NSLocalizedDescriptionKey: message])))
+                return
+            }
+
+            guard let responseData = data, !responseData.isEmpty else {
+                completion(.failure(NSError(domain: "No data", code: httpResponse.statusCode, userInfo: nil)))
+                return
+            }
+
+            do {
+                guard let dictionary = try JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any] else {
+                    completion(.failure(NSError(domain: "Invalid JSON format", code: httpResponse.statusCode, userInfo: nil)))
                     return
                 }
-                if let responseString = String(data: responseData, encoding: .utf8) {
-                }
-                do {
-                    let decoder = JSONDecoder()
-                    if let dictionary = try JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any] {
-                        let dataResult =  parseDataToRemoteProcessingModel(data: dictionary);
-                        completion(BaseResult.success(dataResult))
-                    } else {
-                    }
-                    
-                    
-                } catch {
-                    completion(BaseResult.failure(error))
-                }
-            }else{
-                completion(BaseResult.failure(NSError(domain: "Invalid Key", code: 0, userInfo: nil)))
+                completion(.success(parseDataToRemoteProcessingModel(data: dictionary)))
+            } catch {
+                completion(.failure(error))
             }
         }
-        
+
         task.resume()
     }
-    
     
     func createMultipartBodyFace(
         parameters: [String: Any],
@@ -543,7 +529,7 @@ class RemoteProcessing {
 
 class UploadDelegate: NSObject, URLSessionTaskDelegate {
     var onProgress: ((Double) -> Void)?
-    
+
     func urlSession(_ session: URLSession,
                     task: URLSessionTask,
                     didSendBodyData bytesSent: Int64,
@@ -553,8 +539,21 @@ class UploadDelegate: NSObject, URLSessionTaskDelegate {
         let progress = Double(totalBytesSent) / Double(totalBytesExpectedToSend)
         onProgress?(progress)
     }
-}
 
+    func urlSession(_ session: URLSession,
+                    didReceive challenge: URLAuthenticationChallenge,
+                    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              challenge.protectionSpace.host == BlobSession.touchHost,
+              let serverTrust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+
+        completionHandler(.useCredential, URLCredential(trust: serverTrust))
+    }
+}
 
 extension Data {
     mutating func append(_ string: String) {

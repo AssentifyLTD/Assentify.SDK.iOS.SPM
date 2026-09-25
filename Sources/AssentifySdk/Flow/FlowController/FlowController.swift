@@ -333,6 +333,11 @@ public final class FlowController {
         case StepsNames.contextAwareSigning:
             push(MultipleFilesContextAwareScreen(flowController: self))
             
+        case StepsNames.documentCapture:
+            push(DocumentCaptureStepScreen(flowController: self))
+            
+            
+            
         default:
             push(SubmitStepScreen(flowController: self))
         }

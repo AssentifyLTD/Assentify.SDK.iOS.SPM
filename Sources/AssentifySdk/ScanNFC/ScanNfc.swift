@@ -129,13 +129,11 @@ public class ScanNfc :LanguageTransformationDelegate{
     }
     
    
-    
     private func uploadImage(
         faceImageData: Data,
         fileName: String,
         nFCPassportModel: NFCPassportModel
     ) {
-
         guard let config = self.configModel else {
             return
         }
@@ -152,11 +150,10 @@ public class ScanNfc :LanguageTransformationDelegate{
             return
         }
 
-
         let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(self.apiKey, forHTTPHeaderField: "X-Api-Key") // Note: Case-sensitive
+        request.setValue(self.apiKey, forHTTPHeaderField: "X-Api-Key")
         request.setValue(config.tenantIdentifier, forHTTPHeaderField: "x-tenant-identifier")
         request.setValue(config.blockIdentifier, forHTTPHeaderField: "x-block-identifier")
         request.setValue(config.instanceId, forHTTPHeaderField: "x-instance-id")
@@ -164,20 +161,18 @@ public class ScanNfc :LanguageTransformationDelegate{
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
         var body = Data()
-
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"asset\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         body.append(faceImageData)
         body.append("\r\n".data(using: .utf8)!)
-
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-
         request.httpBody = body
 
 
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
+        let task = BlobSession.shared.dataTask(with: request) { data, response, error in
+
+            if let error = error as NSError? {
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
@@ -187,33 +182,34 @@ public class ScanNfc :LanguageTransformationDelegate{
                 return
             }
 
+            let responseString = data.flatMap { String(data: $0, encoding: .utf8) } ?? "<empty>"
 
-            if !(200...299).contains(httpResponse.statusCode) {
+            guard (200...299).contains(httpResponse.statusCode) else {
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
 
-            if let data = data {
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let uploadedUrl = json["url"] as? String {
-
-                        var faces = self.passportResponseModel?.passportExtractedModel?.faces ?? []
-                        faces.removeAll()
-                        faces.append(uploadedUrl)
-                        self.passportResponseModel?.passportExtractedModel?.faces = faces
-                        self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
-                    }
-                } catch {
-                    self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
-                }
+            guard let data = data, !data.isEmpty else {
+                self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
+                return
             }
+
+            guard let json = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]) else {
+                self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
+                return
+            }
+
+            guard let dict = json as? [String: Any], let uploadedUrl = dict["url"] as? String else {
+                self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
+                return
+            }
+
+            self.passportResponseModel?.passportExtractedModel?.faces = [uploadedUrl]
+            self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
         }
-        
+
         task.resume()
     }
-
-
 
     
    

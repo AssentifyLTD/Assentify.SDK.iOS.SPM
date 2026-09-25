@@ -70,6 +70,9 @@ public struct FlowStrings {
     public static var stepSigningName: String { isArabic ? "التوقيع الإلكتروني" : "eKYC Signing" }
     public static var stepSigningDesc: String { isArabic ? "قدّم توقيعاً رقمياً لإكمال عملية التسجيل." : "Provide a digital signature to complete onboarding." }
 
+    public static var stepDocumentCaptureName: String { isArabic ? "التقاط المستندات" : "Document Capture" }
+    public static var stepDocumentCaptureDesc: String { isArabic ? "قم بالتقاط مستنداتك المهمة أو تحميلها لإكمال عملية التحقق." : "Capture or upload your important documents to complete verification." }
+
     // MARK: - ID Step
 
     public static var chooseCountry: String { isArabic ? "اختر بلد الإصدار" : "Choose your country of issuance" }
@@ -345,7 +348,37 @@ public struct FlowStrings {
     public static var movePassportFurther: String { isArabic ? "ابعد جواز السفر" : "Move Passport Further" }
     public static var pleasePresentPassport: String { isArabic ? "يرجى تقديم جواز السفر" : "Please present passport" }
     public static var centerYourCard: String { isArabic ? "يرجى توسيط البطاقة" : "Please center your card" }
-    
+
     public static var dataRelayDialogTitle: String { isArabic ? "جارٍ المعالجة" : "Processing ..." }
     public static var dataRelayDialogMessage: String { isArabic ? "نقوم بالتحقق من بياناتك. لن يستغرق الأمر وقتاً طويلاً." : "We're validating your data. This won't take long." }
+
+    // MARK: - Document Capture
+
+    public static var docTakePicture: String { isArabic ? "التقاط صورة" : "Take picture" }
+    public static var docUploadFile: String { isArabic ? "رفع ملف" : "Upload file" }
+    public static var docUploading: String { isArabic ? "جارٍ الرفع..." : "Uploading…" }
+    public static var docUploaded: String { isArabic ? "تم الرفع" : "Uploaded" }
+    public static var docUploadFailed: String { isArabic ? "فشل الرفع. اضغط لإعادة المحاولة أو احذف الملف." : "Upload failed. Tap retry or remove." }
+    public static var docRequired: String { isArabic ? "هذا المستند مطلوب." : "This document is required." }
+    public static var docWaitForUpload: String { isArabic ? "يرجى الانتظار حتى يكتمل الرفع." : "Please wait for the upload to finish." }
+    public static var docFixFailed: String { isArabic ? "أعد المحاولة أو احذف الملف الذي فشل رفعه." : "Retry or remove the failed upload." }
+    public static var docReadFailed: String { isArabic ? "تعذّرت قراءة هذا الملف. يرجى تجربة ملف آخر." : "Couldn't read this file. Please try another one." }
+    public static var docCameraFailed: String { isArabic ? "تعذّر فتح الكاميرا." : "Couldn't open the camera." }
+
+    public static func docMinCount(_ min: Int) -> String {
+        isArabic ? "يرجى إضافة \(min) على الأقل." : "Please add at least \(min)."
+    }
+    public static func docFormatNotAllowed(_ formats: String) -> String {
+        isArabic ? "ملف غير مدعوم. الصيغ المسموحة: \(formats)." : "Unsupported file. Allowed: \(formats)."
+    }
+    public static func docFileTooLarge(_ maxMb: Int) -> String {
+        isArabic ? "حجم الملف كبير جدًا. الحد الأقصى \(maxMb) ميغابايت." : "File is too large. Maximum size is \(maxMb) MB."
+    }
+    public static func docMixedType(_ kind: String?) -> String {
+        if isArabic {
+            let typePart = kind != nil ? " من نوع \(kind!)" : ""
+            return "هذا الحقل يحتوي بالفعل على ملف\(typePart). قم بإزالته أولاً إذا كنت تريد رفع نوع ملف مختلف هنا."
+        }
+        return "This slot already contains \(kind ?? "a") file(s). Remove them first if you want to upload a different file type here."
+    }
 }

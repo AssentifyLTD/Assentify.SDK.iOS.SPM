@@ -10,6 +10,9 @@ let package = Package(
     dependencies: [
         // Official SPM
         .package(url: "https://github.com/SVGKit/SVGKit.git", from: "3.0.0"),
+        // Pinned below 3.10.0: that release raised CocoaLumberjack's minimum to iOS 15,
+        // which is incompatible with SVGKit's own manifest (iOS 12 floor).
+        .package(url: "https://github.com/CocoaLumberjack/CocoaLumberjack.git", "3.7.0"..<"3.10.0"),
         .package(url: "https://github.com/AndyQ/NFCPassportReader.git", exact: "2.1.0"),
         .package(url: "https://github.com/bugsnag/bugsnag-cocoa.git", from: "6.0.0"),
         .package(url: "https://github.com/bugsnag/bugsnag-cocoa-performance.git", from: "2.0.0"),
@@ -25,6 +28,9 @@ let package = Package(
             name: "AssentifySdk",
             dependencies: [
                 "SVGKit",
+                // Unused directly; listed so the CocoaLumberjack version cap above is
+                // honored when this package is consumed as a dependency.
+                .product(name: "CocoaLumberjack", package: "CocoaLumberjack"),
                 "NFCPassportReader",
                 .product(name: "Bugsnag", package: "bugsnag-cocoa"),
                 .product(name: "BugsnagPerformance", package: "bugsnag-cocoa-performance"),
@@ -72,7 +78,8 @@ let package = Package(
                 .process("Resources/ic_flip_card.svg"),
                 .process("Resources/qr-video.mp4"),
                 .process("Resources/ic_phone.svg"),
-                .process("Resources/ic_warning.svg")
+                .process("Resources/ic_warning.svg"),
+                .process("Resources/ic_document_capture.svg")
             ]
         ),
         .testTarget(

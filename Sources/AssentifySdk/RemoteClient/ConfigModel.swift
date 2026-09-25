@@ -92,6 +92,8 @@ public struct Customization: Codable {
     public let otpFormat: Int?
     public let smsProvider: Int?
     public let whatsappProvider: Int?
+    public let documentCaptures: [DocumentCaptures]?
+
     
 }
 
