@@ -304,6 +304,7 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
     }
     
     
+ 
     private func jpegData(from pixelBuffer: CVPixelBuffer, compressionQuality: CGFloat = 0.9) -> Data? {
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
         let context = CIContext()
@@ -313,86 +314,96 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
         let uiImage = UIImage(cgImage: cgImage)
         return uiImage.jpegData(compressionQuality: compressionQuality)
     }
+   
+ 
     
     private func uploadImage(
         pixelBuffer: CVPixelBuffer,
         fileName: String,
         mrzInfo: [String: Any]
     ) {
-        
         guard let config = self.configModel else {
             return
         }
-        
+
         guard let faceImageData = jpegData(from: pixelBuffer, compressionQuality: 0.6) else {
             self.buildData(imageUrl: "", mrzInfo: mrzInfo)
             return
         }
-        
+
         let fullPath = "\(config.tenantIdentifier)/\(config.blockIdentifier)/\(config.instanceId)/\(fileName)"
         guard let encodedPath = fullPath.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) else {
-            self.buildData(imageUrl:"",mrzInfo: mrzInfo)
+            self.buildData(imageUrl: "", mrzInfo: mrzInfo)
             return
         }
-        
+
+        // BaseUrls.blobUrl = "https://ocr-cognitive.touch.com.lb/blob/"
         let baseUrl = "\(BaseUrls.blobUrl)v2/Document/UploadFile/userfiles/\(encodedPath)?skipValidator=true"
         guard let url = URL(string: baseUrl) else {
-            self.buildData(imageUrl:"",mrzInfo: mrzInfo)
+            self.buildData(imageUrl: "", mrzInfo: mrzInfo)
             return
         }
-        
+
         let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue(self.apiKey, forHTTPHeaderField: "X-Api-Key") // Note: Case-sensitive
+        request.setValue(self.apiKey, forHTTPHeaderField: "X-Api-Key")
         request.setValue(config.tenantIdentifier, forHTTPHeaderField: "x-tenant-identifier")
         request.setValue(config.blockIdentifier, forHTTPHeaderField: "x-block-identifier")
         request.setValue(config.instanceId, forHTTPHeaderField: "x-instance-id")
         request.setValue("text/plain", forHTTPHeaderField: "accept")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
+
         var body = Data()
-        
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"asset\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         body.append(faceImageData)
         body.append("\r\n".data(using: .utf8)!)
-        
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
         request.httpBody = body
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                self.buildData(imageUrl:"",mrzInfo: mrzInfo)
+
+
+        let task = BlobSession.shared.dataTask(with: request) { data, response, error in
+
+            if let error = error as NSError? {
+                self.buildData(imageUrl: "", mrzInfo: mrzInfo)
                 return
             }
-            
+
             guard let httpResponse = response as? HTTPURLResponse else {
-                self.buildData(imageUrl:"",mrzInfo: mrzInfo)
+                self.buildData(imageUrl: "", mrzInfo: mrzInfo)
                 return
             }
-            
-            if !(200...299).contains(httpResponse.statusCode) {
-                self.buildData(imageUrl:"",mrzInfo: mrzInfo)
+
+            let responseString = data.flatMap { String(data: $0, encoding: .utf8) } ?? "<empty>"
+
+
+            guard (200...299).contains(httpResponse.statusCode) else {
+                self.buildData(imageUrl: "", mrzInfo: mrzInfo)
                 return
             }
-            
-            if let data = data {
-                do {
-                    if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-                       let uploadedUrl = json["url"] as? String {
-                       self.buildData(imageUrl:uploadedUrl,mrzInfo: mrzInfo)
-                    }
-                } catch {
-                    self.buildData(imageUrl:"",mrzInfo: mrzInfo)
+
+            guard let data = data, !data.isEmpty else {
+                self.buildData(imageUrl: "", mrzInfo: mrzInfo)
+                return
+            }
+
+            do {
+                let json = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
+                if let dict = json as? [String: Any], let uploadedUrl = dict["url"] as? String {
+                    self.buildData(imageUrl: uploadedUrl, mrzInfo: mrzInfo)
+                } else {
+                    self.buildData(imageUrl: "", mrzInfo: mrzInfo)
                 }
+            } catch {
+                self.buildData(imageUrl: "", mrzInfo: mrzInfo)
             }
         }
-        
+
         task.resume()
     }
+    
     private func buildData(imageUrl: String,mrzInfo: [String: Any]){
         guard let configModel = self.configModel,
               let passportStep = configModel.stepDefinitions.first(where: { $0.stepId == self.stepId }) else {

@@ -65,8 +65,13 @@ public class AssentifySdk {
             self.getTemplatesByCountry(templates: templates)
         }
         
-        startInitializeCheck();
-        
+        if(!BaseUrls.baseURLGateway.isEmpty){
+            startInitializeCheck();
+        }else{
+            self.isKeyValid = true
+            self.newInstance()
+            self.assentifySdkDelegate?.onAssentifySdkInitSuccess(configModel:  self.configModel!)
+        }
     }
     
  
@@ -338,6 +343,21 @@ public class AssentifySdk {
         return nil;
     }
     
+    
+    public func startDocumentCapture(documentCaptureDelegate:DocumentCaptureDelegate,stepId: Int? = nil) -> DocumentCapture?{
+        if(isKeyValid){
+            let documentCapture =  DocumentCapture(
+                apiKey:apiKey,
+                configModel:configModel!,
+                delegate: documentCaptureDelegate,
+            );
+            documentCapture.setStepId(stepId != nil ? String(stepId!) : nil)
+            return documentCapture;
+        }else{
+            NSException(name: NSExceptionName(rawValue: "Exception"), reason: "Invalid Keys", userInfo: nil).raise()
+        }
+        return nil;
+    }
     
     
     public func startSubmitData(

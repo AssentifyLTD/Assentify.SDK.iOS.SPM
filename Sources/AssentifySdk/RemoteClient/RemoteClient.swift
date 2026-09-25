@@ -255,47 +255,55 @@ func remoteSubmitData(apiKey: String,
     task.resume()
 }
 
+
+
 func transformData(apiKey: String, language: String, request: TransformationModel, completion: @escaping (BaseResult<[LanguageTransformationModel], Error>) -> Void) {
     let urlString = BaseUrls.languageTransformationUrl + "LanguageTransform/LanguageTransformation"
     guard let url = URL(string: urlString) else {
         completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
         return
     }
-    
+
     var urlRequest = URLRequest(url: url)
     urlRequest.httpMethod = "POST"
     urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
     urlRequest.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
     urlRequest.setValue(apiKey, forHTTPHeaderField: "x-api-key")
     urlRequest.setValue(language, forHTTPHeaderField: "accept-language")
-    
+
     do {
-        let encoder = JSONEncoder()
-        urlRequest.httpBody = try encoder.encode(request)
+        urlRequest.httpBody = try JSONEncoder().encode(request)
     } catch {
         completion(.failure(error))
         return
     }
-    
-    let task = URLSession.shared.dataTask(with: urlRequest) { data, response, error in
+
+    let task = BlobSession.shared.dataTask(with: urlRequest) { data, response, error in
         if let error = error {
             completion(.failure(error))
             return
         }
-        
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+
+        guard let httpResponse = response as? HTTPURLResponse else {
             completion(.failure(NSError(domain: "Invalid response", code: 0, userInfo: nil)))
             return
         }
-        
-        guard let data = data else {
-            completion(.failure(NSError(domain: "No data", code: 0, userInfo: nil)))
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let message = data.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+            completion(.failure(NSError(domain: "Invalid response",
+                                        code: httpResponse.statusCode,
+                                        userInfo: [NSLocalizedDescriptionKey: message])))
             return
         }
-        
+
+        guard let data = data, !data.isEmpty else {
+            completion(.failure(NSError(domain: "No data", code: httpResponse.statusCode, userInfo: nil)))
+            return
+        }
+
         do {
-            let decoder = JSONDecoder()
-            let result = try decoder.decode([LanguageTransformationModel].self, from: data)
+            let result = try JSONDecoder().decode([LanguageTransformationModel].self, from: data)
             completion(.success(result))
         } catch {
             completion(.failure(error))
@@ -303,9 +311,4 @@ func transformData(apiKey: String, language: String, request: TransformationMode
     }
     task.resume()
 }
-
-
-
-
-
 
