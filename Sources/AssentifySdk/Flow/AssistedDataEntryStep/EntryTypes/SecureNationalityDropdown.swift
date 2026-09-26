@@ -566,7 +566,7 @@ public let allCountries: [CountryOption] = [
     CountryOption("IRN", "IR", "Iran", "+98", "^9\\d{9}$"),
     CountryOption("IRQ", "IQ", "Iraq", "+964", "^7[3-9]\\d{8}$"),
     CountryOption("JOR", "JO", "Jordan", "+962", "^7\\d{8}$"),
-    CountryOption("LBN", "LB", "Lebanon", "+961", "^(03|70|71|76|78|79|81)\\d{6}$"),
+    CountryOption("LBN", "LB", "Lebanon", "+961", "^(01|03|70|71|76|78|79|81)\\d{6}$"),
     CountryOption("KWT", "KW", "Kuwait", "+965", "^[569]\\d{7}$"),
     CountryOption("QAT", "QA", "Qatar", "+974", "^3\\d{7}$"),
     CountryOption("OMN", "OM", "Oman", "+968", "^(9|7)\\d{7}$"),
