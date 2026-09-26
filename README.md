@@ -36,7 +36,7 @@ Add the following to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/AssentifyLTD/Assentify.SDK.iOS.SPM.git", from: "1.0.0-Beta.27")
+    .package(url: "https://github.com/AssentifyLTD/Assentify.SDK.iOS.SPM.git", from: "1.0.0-Beta.28")
 ]
 ```
 
@@ -65,6 +65,9 @@ AssentifySdk pulls in the following packages automatically via SPM:
 
 ## Versions
 
+***1.0.0-Beta.28***
+1. *"Phone Regex Patterns Improvements*
+        
 ***1.0.0-Beta.27***
 1. *"Document Capture Step*
 
