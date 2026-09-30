@@ -336,7 +336,8 @@ public final class FlowController {
         case StepsNames.documentCapture:
             push(DocumentCaptureStepScreen(flowController: self))
             
-            
+        case StepsNames.questionnaire:
+            push(QuestionnaireStepScreen(flowController: self))
             
         default:
             push(SubmitStepScreen(flowController: self))

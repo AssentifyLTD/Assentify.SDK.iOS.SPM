@@ -73,6 +73,21 @@ public struct FlowStrings {
     public static var stepDocumentCaptureName: String { isArabic ? "التقاط المستندات" : "Document Capture" }
     public static var stepDocumentCaptureDesc: String { isArabic ? "قم بالتقاط مستنداتك المهمة أو تحميلها لإكمال عملية التحقق." : "Capture or upload your important documents to complete verification." }
 
+    public static var stepQuestionnaireName: String { isArabic ? "الاستبيان" : "Questionnaire" }
+    public static var stepQuestionnaireDesc: String { isArabic ? "أجب عن بعض الأسئلة القصيرة لإكمال ملفك." : "Answer a few short questions to complete your profile." }
+
+    public static func qQuestionOf(_ current: Int, _ total: Int) -> String {
+        isArabic ? "السؤال \(current) من \(total)" : "Question \(current) of \(total)"
+    }
+
+    public static var qSelectOne: String { isArabic ? "اختر إجابة واحدة" : "Select one answer" }
+    public static var qSelectMultiple: String { isArabic ? "اختر كل ما ينطبق" : "Select all that apply" }
+    public static var qAnswerRequired: String { isArabic ? "يرجى اختيار إجابة للمتابعة." : "Please choose an answer to continue." }
+    public static var qPrevious: String { isArabic ? "السابق" : "Previous" }
+    public static var qFinish: String { isArabic ? "إنهاء" : "Finish" }
+    public static var qLoadFailed: String { isArabic ? "تعذّر تحميل الأسئلة. يرجى المحاولة مرة أخرى." : "We couldn't load the questions. Please try again." }
+    public static var qNoQuestions: String { isArabic ? "لا توجد أسئلة للإجابة عنها." : "There are no questions to answer." }
+    
     // MARK: - ID Step
 
     public static var chooseCountry: String { isArabic ? "اختر بلد الإصدار" : "Choose your country of issuance" }

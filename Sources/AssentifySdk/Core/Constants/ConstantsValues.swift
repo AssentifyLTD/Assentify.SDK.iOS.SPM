@@ -35,6 +35,7 @@ public struct StepsNames {
     public   static let split = "Split"
     public   static let dataRelay = "DataRelay"
     public   static let documentCapture = "DocumentCapture"
+    public   static let questionnaire = "Questionnaire"
 
 }
 

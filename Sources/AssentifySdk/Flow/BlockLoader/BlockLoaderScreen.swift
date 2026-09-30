@@ -420,7 +420,8 @@ private func buildStepsFromConfig(flowController:FlowController) -> [LocalStepMo
                 def == StepsNames.faceImageAcquisition ||
                 def == StepsNames.assistedDataEntry ||
                 def == StepsNames.contextAwareSigning ||
-                def == StepsNames.documentCapture {
+                def == StepsNames.documentCapture ||
+                def == StepsNames.questionnaire {
                 
                 guard let meta = getStepMeta(def) else { continue }
                 
@@ -565,6 +566,12 @@ public func getStepMeta(_ stepDefinition: String) -> StepMeta? {
             name: FlowStrings.stepDocumentCaptureName,
             description: FlowStrings.stepDocumentCaptureDesc,
             icon: "ic_document_capture"
+        )
+    case StepsNames.questionnaire:
+        return StepMeta(
+            name: FlowStrings.stepQuestionnaireName,
+            description: FlowStrings.stepQuestionnaireDesc,
+            icon: "ic_questionnaire_step"
         )
         
     default:

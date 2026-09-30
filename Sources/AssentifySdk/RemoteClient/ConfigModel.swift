@@ -93,6 +93,7 @@ public struct Customization: Codable {
     public let smsProvider: Int?
     public let whatsappProvider: Int?
     public let documentCaptures: [DocumentCaptures]?
+    public let questions: [QuestionModel]?
 
     
 }

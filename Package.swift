@@ -79,7 +79,8 @@ let package = Package(
                 .process("Resources/qr-video.mp4"),
                 .process("Resources/ic_phone.svg"),
                 .process("Resources/ic_warning.svg"),
-                .process("Resources/ic_document_capture.svg")
+                .process("Resources/ic_document_capture.svg"),
+                .process("Resources/ic_questionnaire_step.svg")
             ]
         ),
         .testTarget(
