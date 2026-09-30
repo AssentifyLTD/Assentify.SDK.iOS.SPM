@@ -630,7 +630,9 @@ public struct SecurePhoneWithOtpField: View {
 
 fileprivate func buildE164(_ local: String, selectedDial: String) -> String {
     let digits = local.filter { $0.isNumber }
-    let normalized = digits.hasPrefix("0") ? String(digits.dropFirst(1)) : digits
+    let normalized = (selectedDial != "+961" && digits.hasPrefix("0"))
+        ? String(digits.dropFirst())
+        : digits
     return selectedDial + normalized
 }
 

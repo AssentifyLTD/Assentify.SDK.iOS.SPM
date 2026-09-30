@@ -360,6 +360,22 @@ public class AssentifySdk {
     }
     
     
+    public func startQuestionnaire(questionnaireDelegate:QuestionnaireDelegate,stepId: Int? = nil) -> Questionnaire?{
+        if(isKeyValid){
+            let questionnaire =  Questionnaire(
+                apiKey:apiKey,
+                configModel:configModel!,
+                delegate: questionnaireDelegate,
+            );
+            questionnaire.setStepId(stepId != nil ? String(stepId!) : nil)
+            return questionnaire;
+        }else{
+            NSException(name: NSExceptionName(rawValue: "Exception"), reason: "Invalid Keys", userInfo: nil).raise()
+        }
+        return nil;
+    }
+    
+    
     public func startSubmitData(
         submitDataDelegate: SubmitDataDelegate,
         submitRequestModel: [SubmitRequestModel],
