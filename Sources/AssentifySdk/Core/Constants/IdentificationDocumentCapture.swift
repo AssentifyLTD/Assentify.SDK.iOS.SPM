@@ -30,7 +30,7 @@ struct IdentificationDocumentCaptureKeys{
     static let idSexArabic = "Sex_Arabic"
     static let idRecordId = "Record_Id"
     static let idDg13Extra = "DG13_Extra"
-       /////
+    /////
     
     static let name = "OnBoardMe_IdentificationDocumentCapture_name"
     static let surname = "OnBoardMe_IdentificationDocumentCapture_surname"

@@ -12,6 +12,32 @@ import CoreNFC
 
 public class ScanNfc: LanguageTransformationDelegate {
 
+    // MARK: - Debug
+
+    /// Set to false to silence the logs (they are also compiled out of release builds)
+    private static let debugEnabled = true
+
+    private func debugLog(_ message: @autoclosure () -> String) {
+        #if DEBUG
+        guard Self.debugEnabled else { return }
+        print("[ScanNfc] \(message())")
+        #endif
+    }
+
+    private func debugDump<T>(_ title: String, _ value: T?) {
+        #if DEBUG
+        guard Self.debugEnabled else { return }
+        guard let value = value else {
+            print("[ScanNfc] \(title): nil (missing / not readable / empty)")
+            return
+        }
+        var text = ""
+        dump(value, to: &text)
+        print("[ScanNfc] \(title):\n\(text)")
+        #endif
+    }
+
+
     // MARK: - Constants
 
     private enum Nfc {
@@ -144,6 +170,22 @@ public class ScanNfc: LanguageTransformationDelegate {
         let value: [UInt8]
     }
 
+    /// DG1 values read straight from the chip MRZ (same as JMRTD MRZInfo on Android).
+    private struct MrzData {
+        var surname: String?          // primaryIdentifier
+        var givenNames: String?       // secondaryIdentifier
+        var documentNumber: String?
+        var nationality: String?
+        var sex: String?
+    }
+
+    /// A resolved value plus where it came from ("DG13", "DG11", "DG12", "DG1"), for the logs
+    private struct Picked {
+        let value: String?
+        let source: String
+    }
+
+
     // MARK: - State
 
     private var scanNfcDelegate: ScanNfcDelegate?
@@ -246,21 +288,19 @@ public class ScanNfc: LanguageTransformationDelegate {
         // DG13 meaning depends on the issuer, so pass the issuing state from DG1
         let issuingState = cleanNfcText(model.issuingAuthority)
         nfcDg13 = rawBytes(model, .DG13).flatMap { decodeDg13($0, issuingState: issuingState) }
+
+        debugLog("========== DATA GROUPS ==========")
+        debugLog("Issuing state (DG1): \(issuingState ?? "nil")")
+        debugLog("Read: DG11=\(nfcDg11 != nil)  DG12=\(nfcDg12 != nil)  DG13=\(nfcDg13 != nil)")
+        debugDump("DG11", nfcDg11)
+        debugDump("DG12", nfcDg12)
+        debugDump("DG13", nfcDg13)
     }
 
     private func rawBytes(_ model: NFCPassportModel, _ id: DataGroupId) -> [UInt8]? {
         guard let dg = model.dataGroupsRead[id] else { return nil }
         let bytes = dg.data
         return bytes.isEmpty ? nil : bytes
-    }
-
-    /// DG1 values read straight from the chip MRZ (same as JMRTD MRZInfo on Android).
-    private struct MrzData {
-        var surname: String?          // primaryIdentifier
-        var givenNames: String?       // secondaryIdentifier
-        var documentNumber: String?
-        var nationality: String?
-        var sex: String?
     }
 
     /// Parses the MRZ (tag 5F1F inside DG1, outer tag 61) ourselves.
@@ -664,6 +704,17 @@ public class ScanNfc: LanguageTransformationDelegate {
         return LatinArabic(main: whole)
     }
 
+    /// DG11 "name of holder" when it is Arabic with a '#' separator: "عمر#محمد" → given "عمر", surname "محمد".
+    /// (Matches the MRZ "MOHAMMAD<<OMAR": surname MOHAMMAD, given OMAR.)
+    /// Latin or unseparated values are not guessed → (nil, nil).
+    private func splitArabicHolderName(_ holder: String?) -> (given: String?, surname: String?) {
+        guard let holder = cleanNfcText(holder),
+              isArabic(holder),
+              holder.contains(Nfc.nameSeparator) else { return (nil, nil) }
+        let parts = holder.components(separatedBy: Nfc.nameSeparator)
+        return (cleanNfcText(parts.first), cleanNfcText(parts.dropFirst().joined(separator: " ")))
+    }
+
     /// Two values are a valid pair when there is at most one Latin and at most one Arabic value.
     /// Returns nil when both are Latin or both are Arabic.
     private func pickLatinArabic(_ a: String, _ b: String) -> LatinArabic? {
@@ -705,7 +756,7 @@ public class ScanNfc: LanguageTransformationDelegate {
 
     /// "NADA" + "KHOURY" → "NADA KHOURY"; both nil → nil
     private func joinNames(_ first: String?, _ second: String?) -> String? {
-        let joined = [first, second].compactMap { $0 }.joined(separator: " ")
+        let joined = [first, second].compactMap { cleanNfcText($0) }.joined(separator: " ")
         return joined.isEmpty ? nil : joined
     }
 
@@ -732,6 +783,24 @@ public class ScanNfc: LanguageTransformationDelegate {
         return fallback
     }
 
+    /// A chip value that carries no information ("-", "--", ".") counts as empty,
+    /// so a placeholder in DG13 never hides a real value in DG11.
+    private func meaningful(_ value: String?) -> String? {
+        guard let v = cleanNfcText(value) else { return nil }
+        let placeholder = v.allSatisfy { $0 == "-" || $0 == "." || $0 == " " }
+        return placeholder ? nil : v
+    }
+
+    /// First candidate with a meaningful value wins; the source is kept for the logs.
+    private func pick(_ candidates: (String, String?)...) -> Picked {
+        for (source, value) in candidates {
+            if let v = meaningful(value) {
+                return Picked(value: v, source: source)
+            }
+        }
+        return Picked(value: nil, source: "none")
+    }
+
 
     // MARK: - Key classification
 
@@ -741,7 +810,7 @@ public class ScanNfc: LanguageTransformationDelegate {
     /// Surname is checked BEFORE name ("Surname" contains "name").
     /// Used by BOTH replaceDataWithNfcData and onTranslatedSuccess, so they always agree
     /// (Swift dictionaries have a random order, so "last key that matched" is not reliable).
-    private enum NfcField {
+    private enum NfcField: String {
         case fathersNameArabic, mothersNameArabic, placeOfBirthArabic, surnameArabic, nameArabic,
              nationalityArabic, sexArabic, recordId, dg13Extra
         case otherNames, mothersName, fathersName, personalNumber, fullDateOfBirth, placeOfBirth,
@@ -795,8 +864,8 @@ public class ScanNfc: LanguageTransformationDelegate {
             (K.documentNumber, .documentNumber),
             (K.sex, .sex),
         ]
-        // 1) Exact field match, case / "_" / space insensitive:
-        //    "IdentificationDocumentCapture_surname" == K.surname even if K.surname is "Surname"
+        // 1) Exact field match, case / "_" / space / leading "ID_" insensitive:
+        //    "..._ID_PlaceOfBirth" == "..._Place_Of_Birth" == K.idPlaceOfBirth
         let field = normalizedField(key)
         for (pattern, kind) in ordered where !pattern.isEmpty && normalizedField(pattern) == field {
             return kind
@@ -808,119 +877,199 @@ public class ScanNfc: LanguageTransformationDelegate {
         return .other
     }
 
-    /// "IdentificationDocumentCapture_Last_Name" → "lastname"
+    /// "IdentificationDocumentCapture_Last_Name"     → "lastname"
+    /// "IdentificationDocumentCapture_ID_PlaceOfBirth" → "placeofbirth"
+    /// "IdentificationDocumentCapture_Place_Of_Birth"  → "placeofbirth"
+    /// Only an uppercase "ID" followed by "_" or " " is stripped, so "Identity..." is untouched.
     private func normalizedField(_ key: String) -> String {
-        let field = key.components(separatedBy: "IdentificationDocumentCapture_").last ?? key
+        var field = key.components(separatedBy: "IdentificationDocumentCapture_").last ?? key
+        for prefix in ["ID_", "ID "] where field.hasPrefix(prefix) {
+            field = String(field.dropFirst(prefix.count))
+            break
+        }
         return field.lowercased()
             .replacingOccurrences(of: "_", with: "")
             .replacingOccurrences(of: " ", with: "")
     }
 
 
-    // MARK: - Replace Data With Nfc Data
+    // MARK: - Value resolution (one place decides DG13 vs DG11 vs DG12 vs DG1)
 
-    private func replaceDataWithNfcData(nFCPassportModel: NFCPassportModel) {
+    /// Every NFC value, with the source it came from.
+    /// Rule: DG13 first (Lebanese issuer data), then DG11. A source with no meaningful value is skipped,
+    /// so a passport with only DG11 (case 2) or mostly DG13 (case 1) both resolve correctly.
+    private func resolveNfcValues(mrz: MrzData?, model: NFCPassportModel) -> [NfcField: Picked] {
         let dg11 = nfcDg11
         let dg12 = nfcDg12
         let dg13 = nfcDg13
+        let holder = splitArabicHolderName(dg11?.nameOfHolder)
 
-        // Best source first: DG13 (Lebanese issuer data) → DG11 → OCR value (via nfcOr)
-        let fatherName = dg13?.fatherName ?? dg11?.fatherName
-        let fatherNameArabic = dg13?.fatherNameArabic ?? dg11?.fatherNameArabic
-        let motherName = dg13?.motherFullName
-            ?? joinNames(dg13?.motherName, dg13?.motherFamilyName)
-            ?? dg11?.motherName
-        let motherNameArabic = dg13?.motherFullNameArabic
-            ?? joinNames(dg13?.motherNameArabic, dg13?.motherFamilyNameArabic)
-            ?? dg11?.motherNameArabic
-        let placeOfBirth = dg11?.placeOfBirth                              // Latin only exists in DG11
-        let placeOfBirthArabic = dg13?.placeOfBirthArabic ?? dg11?.placeOfBirthArabic
+        var r = [NfcField: Picked]()
 
-        // DG1 (MRZ): given names / surname come from the chip MRZ ("SURNAME<<GIVEN<NAMES").
-        // Cleaned ("<" → space, trimmed). Like Kotlin, name / surname are ALWAYS taken from DG1.
+        // ---------- Parents (DG13 → DG11) ----------
+        r[.fathersName] = pick(("DG13", dg13?.fatherName),
+                               ("DG11", dg11?.fatherName))
+        r[.fathersNameArabic] = pick(("DG13", dg13?.fatherNameArabic),
+                                     ("DG11", dg11?.fatherNameArabic))
+        r[.mothersName] = pick(("DG13", dg13?.motherFullName),
+                               ("DG13", joinNames(dg13?.motherName, dg13?.motherFamilyName)),
+                               ("DG11", dg11?.motherName))
+        r[.mothersNameArabic] = pick(("DG13", dg13?.motherFullNameArabic),
+                                     ("DG13", joinNames(dg13?.motherNameArabic, dg13?.motherFamilyNameArabic)),
+                                     ("DG11", dg11?.motherNameArabic))
+
+        // ---------- Place of birth ----------
+        r[.placeOfBirth] = pick(("DG11", dg11?.placeOfBirth))            // Latin only exists in DG11
+        r[.placeOfBirthArabic] = pick(("DG13", dg13?.placeOfBirthArabic),
+                                      ("DG11", dg11?.placeOfBirthArabic))
+
+        // ---------- Arabic names (DG13 → DG11 "name of holder") ----------
+        r[.nameArabic] = pick(("DG13", dg13?.givenNamesArabic),
+                              ("DG11 holder", holder.given))
+        r[.surnameArabic] = pick(("DG13", dg13?.surnameArabic),
+                                 ("DG11 holder", holder.surname))
+
+        // ---------- DG13 only ----------
+        r[.nationalityArabic] = pick(("DG13", dg13?.nationalityArabic))
+        r[.sexArabic] = pick(("DG13", dg13?.sexArabic))
+        r[.recordId] = pick(("DG13", dg13?.recordId))
+        r[.dg13Extra] = pick(("DG13", dg13?.unrecognized))
+
+        // ---------- DG11 only ----------
+        r[.otherNames] = pick(("DG11", dg11?.otherNames))
+        r[.personalNumber] = pick(("DG11", dg11?.personalNumber))
+        r[.fullDateOfBirth] = pick(("DG11", dg11?.fullDateOfBirth))
+        r[.permanentAddress] = pick(("DG11", dg11?.permanentAddress))
+        r[.telephone] = pick(("DG11", dg11?.telephone))
+        r[.profession] = pick(("DG11", dg11?.profession))
+        r[.title] = pick(("DG11", dg11?.title))
+        r[.personalSummary] = pick(("DG11", dg11?.personalSummary))
+        r[.otherValidTDNumbers] = pick(("DG11", dg11?.otherValidTDNumbers))
+        r[.custodyInformation] = pick(("DG11", dg11?.custodyInformation))
+
+        // ---------- DG12 ----------
+        r[.issuingAuthority] = pick(("DG12", dg12?.issuingAuthority))
+        r[.dateOfIssue] = pick(("DG12", dg12?.dateOfIssue))
+        r[.namesOfOtherPersons] = pick(("DG12", dg12?.namesOfOtherPersons))
+        r[.endorsementsAndObservations] = pick(("DG12", dg12?.endorsementsAndObservations))
+        r[.taxOrExitRequirements] = pick(("DG12", dg12?.taxOrExitRequirements))
+        r[.dateOfPersonalization] = pick(("DG12", dg12?.dateAndTimeOfPersonalization))
+        r[.personalizationSystemSerialNumber] = pick(("DG12", dg12?.personalizationSystemSerialNumber))
+
+        // ---------- DG1 (MRZ) ----------
+        r[.surname] = pick(("DG1", mrz?.surname))
+        r[.name] = pick(("DG1", mrz?.givenNames))
+        r[.nationality] = pick(("DG1", mrz?.nationality), ("DG1 lib", model.nationality))
+        r[.documentNumber] = pick(("DG1", mrz?.documentNumber), ("DG1 lib", model.documentNumber))
+        r[.sex] = pick(("DG1", mrz?.sex), ("DG1 lib", model.gender))
+
+        debugLogResolved(r, dg11: dg11, dg13: dg13)
+        return r
+    }
+
+    private func debugLogResolved(_ r: [NfcField: Picked], dg11: NfcDg11Data?, dg13: NfcDg13Data?) {
+        debugLog("========== RESOLVED NFC VALUES ==========")
+        for (field, picked) in r.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+            let value = picked.value.map { "\"\($0)\"" } ?? "nil"
+            debugLog(String(format: "%-36@ = %@  [%@]", field.rawValue as NSString, value as NSString, picked.source as NSString))
+        }
+
+        // Both DGs have a value but they differ: DG13 wins, show it so it can be checked
+        let overlaps: [(String, String?, String?)] = [
+            ("fathersName", dg13?.fatherName, dg11?.fatherName),
+            ("fathersNameArabic", dg13?.fatherNameArabic, dg11?.fatherNameArabic),
+            ("mothersName", dg13?.motherName, dg11?.motherName),
+            ("mothersNameArabic", dg13?.motherNameArabic, dg11?.motherNameArabic),
+            ("placeOfBirthArabic", dg13?.placeOfBirthArabic, dg11?.placeOfBirthArabic),
+        ]
+        for (name, v13, v11) in overlaps {
+            if let a = meaningful(v13), let b = meaningful(v11), a != b {
+                debugLog("⚠️ \(name): DG13=\"\(a)\" differs from DG11=\"\(b)\" → using DG13")
+            }
+        }
+    }
+
+
+    // MARK: - Replace Data With Nfc Data
+
+    private func replaceDataWithNfcData(nFCPassportModel: NFCPassportModel) {
+        // DG1 (MRZ): name / surname are ALWAYS taken from DG1, like Kotlin
         let mrz = readMrz(nFCPassportModel)
-        let mrzGivenNames = mrz?.givenNames ?? ""
-        let mrzSurname = mrz?.surname ?? ""
-        let mrzNationality = mrz?.nationality ?? cleanNfcText(nFCPassportModel.nationality)
-        let mrzDocumentNumber = mrz?.documentNumber ?? cleanNfcText(nFCPassportModel.documentNumber)
-        let mrzSex = mrz?.sex ?? cleanNfcText(nFCPassportModel.gender)
-        self.dg1GivenNames = mrzGivenNames
-        self.dg1Surname = mrzSurname
+        debugDump("DG1 MRZ", mrz)
 
-        
+        let resolved = resolveNfcValues(mrz: mrz, model: nFCPassportModel)
+        self.dg1GivenNames = resolved[.name]?.value ?? ""
+        self.dg1Surname = resolved[.surname]?.value ?? ""
 
         var outputProperties = [String: Any]()
+        var unmatchedKeys = [String]()
+
+        debugLog("========== KEY MAPPING (key -> field | before -> after [source]) ==========")
 
         if let originalOutputProps = passportResponseModel?.passportExtractedModel?.outputProperties {
-            for (key, value) in originalOutputProps {
-               
-                switch classify(key) {
+            for (key, value) in originalOutputProps.sorted(by: { $0.key < $1.key }) {
+                let kind = classify(key)
+                let picked = resolved[kind]
+                let newValue: Any
 
-                // ---------- Arabic / DG13 ----------
-                case .fathersNameArabic:  outputProperties[key] = nfcOr(fatherNameArabic, value)
-                case .mothersNameArabic:  outputProperties[key] = nfcOr(motherNameArabic, value)
-                case .placeOfBirthArabic: outputProperties[key] = nfcOr(placeOfBirthArabic, value)
-                case .surnameArabic:      outputProperties[key] = nfcOr(dg13?.surnameArabic, value)
-                case .nameArabic:         outputProperties[key] = nfcOr(dg13?.givenNamesArabic, value)
-                case .nationalityArabic:  outputProperties[key] = nfcOr(dg13?.nationalityArabic, value)
-                case .sexArabic:          outputProperties[key] = nfcOr(dg13?.sexArabic, value)
-                case .recordId:           outputProperties[key] = nfcOr(dg13?.recordId, value)
-                case .dg13Extra:          outputProperties[key] = nfcOr(dg13?.unrecognized, value)
+                switch kind {
+                case .other:
+                    newValue = value
+                    unmatchedKeys.append(key)
 
-                // ---------- DG11 ----------
-                case .otherNames:          outputProperties[key] = nfcOr(dg11?.otherNames, value)
-                case .mothersName:         outputProperties[key] = nfcOr(motherName, value)
-                case .fathersName:         outputProperties[key] = nfcOr(fatherName, value)
-                case .personalNumber:      outputProperties[key] = nfcOr(dg11?.personalNumber, value)
-                case .fullDateOfBirth:     outputProperties[key] = nfcOr(dg11?.fullDateOfBirth, value)
-                case .placeOfBirth:        outputProperties[key] = nfcOr(placeOfBirth, value)
-                case .permanentAddress:    outputProperties[key] = nfcOr(dg11?.permanentAddress, value)
-                case .telephone:           outputProperties[key] = nfcOr(dg11?.telephone, value)
-                case .profession:          outputProperties[key] = nfcOr(dg11?.profession, value)
-                case .title:               outputProperties[key] = nfcOr(dg11?.title, value)
-                case .personalSummary:     outputProperties[key] = nfcOr(dg11?.personalSummary, value)
-                case .otherValidTDNumbers: outputProperties[key] = nfcOr(dg11?.otherValidTDNumbers, value)
-                case .custodyInformation:  outputProperties[key] = nfcOr(dg11?.custodyInformation, value)
-
-                // ---------- DG12 ----------
-                case .issuingAuthority:            outputProperties[key] = nfcOr(dg12?.issuingAuthority, value)
-                case .dateOfIssue:                 outputProperties[key] = nfcOr(dg12?.dateOfIssue, value)
-                case .namesOfOtherPersons:         outputProperties[key] = nfcOr(dg12?.namesOfOtherPersons, value)
-                case .endorsementsAndObservations: outputProperties[key] = nfcOr(dg12?.endorsementsAndObservations, value)
-                case .taxOrExitRequirements:       outputProperties[key] = nfcOr(dg12?.taxOrExitRequirements, value)
-                case .dateOfPersonalization:       outputProperties[key] = nfcOr(dg12?.dateAndTimeOfPersonalization, value)
-                case .personalizationSystemSerialNumber:
-                    outputProperties[key] = nfcOr(dg12?.personalizationSystemSerialNumber, value)
-
-                // ---------- DG1 (MRZ) ----------
                 case .surname:
-                    // Always DG1, like Kotlin (primaryIdentifier) — never the OCR value
-                    outputProperties[key] = mrzSurname
-                    passportResponseModel?.passportExtractedModel?.identificationDocumentCapture?.surname = mrzSurname
+                    // Always DG1 (primaryIdentifier) — never the OCR value
+                    let v = picked?.value ?? ""
+                    newValue = v
+                    passportResponseModel?.passportExtractedModel?.identificationDocumentCapture?.surname = v
+
                 case .name:
-                    // Always DG1, like Kotlin (secondaryIdentifier) — never the OCR value
-                    outputProperties[key] = mrzGivenNames
-                    passportResponseModel?.passportExtractedModel?.identificationDocumentCapture?.name = mrzGivenNames
+                    // Always DG1 (secondaryIdentifier) — never the OCR value
+                    let v = picked?.value ?? ""
+                    newValue = v
+                    passportResponseModel?.passportExtractedModel?.identificationDocumentCapture?.name = v
+
                 case .nationality:
-                    outputProperties[key] = nfcOr(mrzNationality, value)
-                    if let v = mrzNationality {
+                    newValue = nfcOr(picked?.value, value)
+                    if let v = picked?.value {
                         passportResponseModel?.passportExtractedModel?.identificationDocumentCapture?.Nationality = v
                     }
+
                 case .documentNumber:
-                    outputProperties[key] = nfcOr(mrzDocumentNumber, value)
-                    if let v = mrzDocumentNumber {
+                    newValue = nfcOr(picked?.value, value)
+                    if let v = picked?.value {
                         passportResponseModel?.passportExtractedModel?.identificationDocumentCapture?.Document_Number = v
                     }
+
                 case .sex:
-                    outputProperties[key] = nfcOr(mrzSex, value)
-                    if let v = mrzSex {
+                    newValue = nfcOr(picked?.value, value)
+                    if let v = picked?.value {
                         passportResponseModel?.passportExtractedModel?.identificationDocumentCapture?.Sex = v
                     }
 
-                case .other:
-                    outputProperties[key] = value
+                default:
+                    // Every DG11 / DG12 / DG13 field: NFC value if any, otherwise keep OCR
+                    newValue = nfcOr(picked?.value, value)
                 }
+
+                outputProperties[key] = newValue
+
+                let source = kind == .other ? "kept" : (picked?.value != nil ? picked!.source : "OCR kept")
+                debugLog("\(extractedKey(key)) -> .\(kind.rawValue) | \"\(value)\" -> \"\(newValue)\" [\(source)]")
             }
+        } else {
+            debugLog("⚠️ outputProperties is nil: nothing to replace")
+        }
+
+        if !unmatchedKeys.isEmpty {
+            debugLog("Keys classified as .other (left as OCR): \(unmatchedKeys.map { extractedKey($0) })")
+        }
+
+        // NFC values that exist but have NO key in the template (they cannot appear in the result)
+        let usedFields = Set(outputProperties.keys.map { classify($0) })
+        let lost = resolved.filter { $0.value.value != nil && !usedFields.contains($0.key) }
+        for (field, picked) in lost.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+            debugLog("ℹ️ .\(field.rawValue) = \"\(picked.value!)\" [\(picked.source)] has no key in the template")
         }
 
         var extractedData = [String: Any]()
@@ -933,8 +1082,10 @@ public class ScanNfc: LanguageTransformationDelegate {
         passportResponseModel?.passportExtractedModel?.extractedData = extractedData
 
         if self.language == Language.NON || self.apiKey.isEmpty {
+            debugLogFinal(extractedData, title: "FINAL (no translation)")
             completeScan()
         } else {
+            debugLog("Sending \(outputProperties.count) properties to translation (\(self.language ?? "nil"))")
             let transformed = LanguageTransformation(apiKey: self.apiKey, languageTransformationDelegate: self)
             transformed.languageTransformation(
                 langauge: self.language!,
@@ -952,6 +1103,13 @@ public class ScanNfc: LanguageTransformationDelegate {
             return key.replacingOccurrences(of: "_", with: " ")
         }
         return key[range.upperBound...].replacingOccurrences(of: "_", with: " ")
+    }
+
+    private func debugLogFinal(_ extractedData: [String: Any], title: String) {
+        debugLog("========== \(title): \(extractedData.count) keys ==========")
+        for (key, value) in extractedData.sorted(by: { $0.key < $1.key }) {
+            debugLog("\(key) = \"\(value)\"")
+        }
     }
 
     /// Every successful scan ends here
@@ -989,15 +1147,24 @@ public class ScanNfc: LanguageTransformationDelegate {
         if let props = properties,
            let outputProperties = self.passportResponseModel?.passportExtractedModel?.outputProperties {
 
+            debugLog("========== TRANSLATION ==========")
+            debugLog("Translated keys: \(props.count) / output keys: \(outputProperties.count)")
+
             // Exact name / surname keys: same classification as replaceDataWithNfcData
             let nameKey = outputProperties.keys.first { classify($0) == .name }
             let surnameKey = outputProperties.keys.first { classify($0) == .surname }
             let nameValue = nameKey.flatMap { outputProperties[$0] }.map { "\($0)" } ?? ""
             let nameWordCount = nameWords(nameValue).count
 
-            var tempTransformedProperties = [String: String]()
+            // 1) Start from EVERY key (NFC values included), so a key that was not
+            //    translated is never lost (this is what emptied case 1 before)
+            var tempTransformedProperties = outputProperties.mapValues { "\($0)" }
             var tempExtractedData = [String: Any]()
+            for (key, value) in outputProperties {
+                tempExtractedData[extractedKey(key)] = value
+            }
 
+            // 2) Overlay translated values
             for (key, value) in props {
                 if key == FullNameKey {
                     // Only used when DG1 had no value; the DG1 override below wins otherwise
@@ -1016,13 +1183,13 @@ public class ScanNfc: LanguageTransformationDelegate {
                 }
             }
 
+            // 3) Ignored properties keep their original value
             for (key, value) in getIgnoredProperties(properties: outputProperties) {
                 tempTransformedProperties[key] = "\(value)"
                 tempExtractedData[extractedKey(key)] = value
             }
 
-            // DG1 is the source of truth for name / surname: applied LAST so nothing
-            // (the translated full name, a translated key, ignored properties) can overwrite it
+            // 4) DG1 is the source of truth for name / surname: applied LAST
             if let nameKey = nameKey, let given = dg1GivenNames {
                 tempTransformedProperties[nameKey] = given
                 tempExtractedData["name"] = given
@@ -1034,14 +1201,23 @@ public class ScanNfc: LanguageTransformationDelegate {
                 tempExtractedData[extractedKey(surnameKey)] = surname
             }
 
+            let notTranslated = outputProperties.keys.filter { props[$0] == nil }
+            if !notTranslated.isEmpty {
+                debugLog("Kept untranslated (\(notTranslated.count)): \(notTranslated.map { extractedKey($0) }.sorted())")
+            }
+
             self.passportResponseModel?.passportExtractedModel?.transformedProperties = tempTransformedProperties
             self.passportResponseModel?.passportExtractedModel?.extractedData = tempExtractedData
+            debugLogFinal(tempExtractedData, title: "FINAL (after translation)")
+        } else {
+            debugLog("⚠️ Translation returned no properties: keeping NFC values")
         }
 
         completeScan()
     }
 
     public func onTranslatedError(properties: [String: String]?) {
+        debugLog("⚠️ Translation failed: keeping NFC values")
         completeScan()
     }
 }
