@@ -1,6 +1,37 @@
 import Foundation
 
 struct IdentificationDocumentCaptureKeys{
+    
+    // NFC
+    static let idOtherNames = "Other_Names"
+    static let idPersonalNumber = "Personal_Number"
+    static let idFullDateOfBirth = "Full_Date_Of_Birth"
+    static let idTelephone = "Telephone"
+    static let idTitle = "Title"
+    static let idPersonalSummary = "Personal_Summary"
+    static let idOtherValidTDNumbers = "Other_Valid_TD_Numbers"
+    static let idCustodyInformation = "Custody_Information"
+
+    static let idIssuingAuthority = "Issuing_Authority"
+    static let idDateOfIssue = "Date_Of_Issue"
+    static let idNamesOfOtherPersons = "Names_Of_Other_Persons"
+    static let idEndorsementsAndObservations = "Endorsements_And_Observations"
+    static let idTaxOrExitRequirements = "Tax_Or_Exit_Requirements"
+    static let idDateOfPersonalization = "Date_Of_Personalization"
+    static let idPersonalizationSystemSerialNumber = "Personalization_System_Serial_Number"
+
+
+    static let idFathersNameArabic = "Fathers_Name_Arabic"
+    static let idMothersNameArabic = "Mothers_Name_Arabic"
+    static let idPlaceOfBirthArabic = "Place_Of_Birth_Arabic"
+    static let idNameArabic = "First_Name_Arabic"
+    static let idSurnameArabic = "Last_Name_Arabic"
+    static let idNationalityArabic = "Nationality_Arabic"
+    static let idSexArabic = "Sex_Arabic"
+    static let idRecordId = "Record_Id"
+    static let idDg13Extra = "DG13_Extra"
+       /////
+    
     static let name = "OnBoardMe_IdentificationDocumentCapture_name"
     static let surname = "OnBoardMe_IdentificationDocumentCapture_surname"
     static let documentType = "OnBoardMe_IdentificationDocumentCapture_Document_Type"
