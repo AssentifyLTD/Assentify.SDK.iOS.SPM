@@ -134,6 +134,13 @@ public struct BaseTheme {
               NotificationCenter.default.post(name: .baseShowMessageChanged, object: nil)
           }
       }
+    
+    public static var faceAcceptanceRate: Int {
+        env.faceAcceptanceRate
+    }
+    
+    
+    
 
 }
 
