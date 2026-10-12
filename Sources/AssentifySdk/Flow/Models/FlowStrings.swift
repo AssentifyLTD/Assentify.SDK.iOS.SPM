@@ -18,7 +18,7 @@ public struct FlowStrings {
     public static var confirm: String { isArabic ? "تأكيد" : "Confirm" }
     public static var confirmed: String { isArabic ? "تم التأكيد" : "Confirmed" }
     public static var sendOtp: String { isArabic ? "إرسال رمز التحقق" : "Send OTP" }
-    public static var letsStart: String { isArabic ? "لنبدأ" : "Lets Start" }
+    public static var letsStart: String { isArabic ? "لنبدأ" : "Let’s start" }
     public static var search: String { isArabic ? "بحث..." : "Search..." }
     public static var noResultsFound: String { isArabic ? "لا توجد نتائج" : "No results found" }
     public static var noDataAvailable: String { isArabic ? "لا تتوفر بيانات" : "No data available" }
@@ -105,9 +105,9 @@ public struct FlowStrings {
     }
 
     public static var presentPassport: String { isArabic ? "قدّم جواز سفرك" : "Present Your Passport" }
-    public static var presentId: String { isArabic ? "قدّم هويتك" : "Present Your ID" }
+    public static var presentId: String { isArabic ? "قدّم هويتك" : "Capture your ID" }
     public static var watchCapturePassport: String { isArabic ? "شاهد كم هو سهل التقاط جواز سفرك" : "Watch How Easy It Is To Capture Your Passport" }
-    public static var watchCaptureId: String { isArabic ? "شاهد كم هو سهل التقاط هويتك" : "Watch How Easy It Is To Capture Your ID" }
+    public static var watchCaptureId: String { isArabic ? "شاهد كم هو سهل التقاط هويتك" : "See how it works" }
 
     public static var idLightingHint: String {
         isArabic
@@ -117,7 +117,7 @@ public struct FlowStrings {
 
     // MARK: - Face Step
 
-    public static var faceMatch: String { isArabic ? "مطابقة الوجه" : "Face Match" }
+    public static var faceMatch: String { isArabic ? "مطابقة الوجه" : "Face match" }
     public static var watchCaptureSelfieMultiline: String { isArabic ? "شاهد كم هو سهل\nالتقاط صورة سيلفي" : "Watch How Easy It Is\nTo Take A Selfie" }
     public static var watchCaptureSelfieSingleLine: String { isArabic ? "شاهد كم هو سهل التقاط صورة سيلفي" : "Watch How Easy It Is To Take A Selfie" }
 
@@ -165,7 +165,7 @@ public struct FlowStrings {
     public static var processingIdWait: String { isArabic ? "جارٍ معالجة الهوية يرجى الانتظار" : "Processing ID please wait" }
     public static var uploadingIdWait: String { isArabic ? "جارٍ رفع الهوية يرجى الانتظار" : "Uploading ID please wait" }
 
-    public static var captureBackOfId: String { isArabic ? "التقط الجهة الخلفية للهوية" : "Capture Back of ID" }
+    public static var captureBackOfId: String { isArabic ? "التقط الجهة الخلفية للهوية" : "Capture back of ID" }
     public static var flipCardHint: String { isArabic ? "يرجى قلب البطاقة المقدمة لالتقاط الجهة الخلفية" : "Please flip the card provided to take the back of the card" }
     public static var expectedCardType: String { isArabic ? "نوع البطاقة المتوقع" : "Expected Card Type" }
 
@@ -298,36 +298,36 @@ public struct FlowStrings {
 
     public static var takePhoto: String { isArabic ? "التقط صورة" : "Take Photo" }
     public static var moreThanOneFace: String { isArabic ? "تم اكتشاف أكثر من وجه. يرجى إبقاء وجهك فقط في الإطار." : "We detected more than one face.Please keep just your face in view." }
-    public static var moveCloser: String { isArabic ? "يرجى الاقتراب" : "Please Move Closer" }
-    public static var moveFurther: String { isArabic ? "يرجى الابتعاد" : "Please Move Further" }
-    public static var holdYourHand: String { isArabic ? "يرجى تثبيت يدك" : "Please Hold Your Hand" }
+    public static var moveCloser: String { isArabic ? "يرجى الاقتراب" : "Please move closer" }
+    public static var moveFurther: String { isArabic ? "يرجى الابتعاد" : "Please move farther away" }
+    public static var holdYourHand: String { isArabic ? "يرجى تثبيت يدك" : "Please hold your hand steady" }
     public static var increaseLighting: String { isArabic ? "يرجى زيادة الإضاءة" : "Please increase the lighting" }
     public static var reduceLighting: String { isArabic ? "يرجى تقليل الإضاءة" : "Please reduce the lighting" }
     public static var tiltHeadRight: String { isArabic ? "يرجى إمالة رأسك إلى اليمين" : "Please tilt your head to the right" }
     public static var tiltHeadLeft: String { isArabic ? "يرجى إمالة رأسك إلى اليسار" : "Please tilt your head to the left" }
-    public static var turnHeadRight: String { isArabic ? "يرجى تدوير رأسك إلى اليمين" : "Please turn your head to the right" }
-    public static var turnHeadLeft: String { isArabic ? "يرجى تدوير رأسك إلى اليسار" : "Please turn your head to the left" }
+    public static var turnHeadRight: String { isArabic ? "يرجى إدارة رأسك إلى اليمين" : "Please turn your head to the right" }
+    public static var turnHeadLeft: String { isArabic ? "يرجى إدارة رأسك إلى اليسار" : "Please turn your head to the left" }
     public static var lowerHead: String { isArabic ? "يرجى خفض رأسك" : "Please lower your head" }
     public static var raiseHead: String { isArabic ? "يرجى رفع رأسك" : "Please raise your head" }
-    public static var holdSteady: String { isArabic ? "حافظ على الثبات" : "Hold Steady" }
-    public static var faceWithinCircle: String { isArabic ? "يرجى وضع وجهك داخل الدائرة" : "Please face within circle" }
-    public static var centerYourFace: String { isArabic ? "يرجى توسيط وجهك" : "Please center your face" }
-    public static var moveFaceLeft: String { isArabic ? "يرجى تحريك وجهك لليسار" : "Please move your face left" }
-    public static var moveFaceRight: String { isArabic ? "يرجى تحريك وجهك لليمين" : "Please move your face right" }
-    public static var moveFaceUp: String { isArabic ? "يرجى تحريك وجهك للأعلى" : "Please move your face up" }
-    public static var moveFaceDown: String { isArabic ? "يرجى تحريك وجهك للأسفل" : "Please move your face down" }
-    public static var winkLeftEye: String { isArabic ? "يرجى الغمز بعينك اليسرى" : "Please wink with your left eye" }
-    public static var winkRightEye: String { isArabic ? "يرجى الغمز بعينك اليمنى" : "Please wink with your right eye" }
-    public static var blinkEyes: String { isArabic ? "يرجى رمش عينيك" : "Please blink your eyes" }
+    public static var holdSteady: String { isArabic ? "يرجى الثبات" : "Please hold steady" }
+    public static var faceWithinCircle: String { isArabic ? "يرجى وضع وجهك داخل الدائرة" : "Please position your face within the circle" }
+    public static var centerYourFace: String { isArabic ? "يرجى وضع وجهك في المنتصف" : "Please center your face" }
+    public static var moveFaceLeft: String { isArabic ? "يرجى تحريك وجهك إلى اليسار" : "Please move your face to the left" }
+    public static var moveFaceRight: String { isArabic ? "يرجى تحريك وجهك إلى اليمين" : "Please move your face to the right" }
+    public static var moveFaceUp: String { isArabic ? "يرجى تحريك وجهك إلى الأعلى" : "Please move your face up" }
+    public static var moveFaceDown: String { isArabic ? "يرجى تحريك وجهك إلى الأسفل" : "Please move your face down" }
+    public static var winkLeftEye: String { isArabic ? "يرجى الغمز بعينك اليسرى" : "Please wink your left eye" }
+    public static var winkRightEye: String { isArabic ? "يرجى الغمز بعينك اليمنى" : "Please wink your right eye" }
+    public static var blinkEyes: String { isArabic ? "يرجى الرمش بعينيك" : "Please blink your eyes" }
 
     public static var processingFaceWait: String { isArabic ? "جارٍ معالجة الوجه يرجى الانتظار" : "Processing Face please wait" }
     public static var uploadingFaceWait: String { isArabic ? "جارٍ رفع الوجه يرجى الانتظار" : "Uploading Face please wait" }
 
     // MARK: - Face Result Screen
 
-    public static var verificationSuccessful: String { isArabic ? "تم التحقق بنجاح" : "Verification Successful" }
+    public static var verificationSuccessful: String { isArabic ? "تم التحقق بنجاح" : "Verification successful" }
     public static var verificationUnsuccessful: String { isArabic ? "فشل التحقق" : "Verification UnSuccessful" }
-    public static var verificationSuccessSubtitle: String { isArabic ? "لقد تمكنا من التأكد من أنه أنت!" : "We have been able to make sure its you!" }
+    public static var verificationSuccessSubtitle: String { isArabic ? "لقد تمكنا من التأكد من أنه أنت!" : "Your identity has been verified" }
     public static var verificationFailSubtitle: String { isArabic ? "لم يتطابق وجهك مع المستند المقدم. قدّم مستنداً آخر أو أكّد." : "Your face did not match with the provided document. Provide another document or confirm." }
     public static var matchLabel: String { isArabic ? "تطابق" : "Match" }
     public static var provideSupportingId: String { isArabic ? "قدّم هوية داعمة للمطابقة معها" : "Provide Supporting ID to match with" }

@@ -41,18 +41,17 @@ public struct FaceResultScreen: View {
     }
 
     private var title: String {
-        match > 50 ? FlowStrings.verificationSuccessful : FlowStrings.verificationUnsuccessful
+        match > BaseTheme.faceAcceptanceRate ? FlowStrings.verificationSuccessful : FlowStrings.verificationUnsuccessful
     }
 
     private var subTitle: String {
-        match > 50
+        match > BaseTheme.faceAcceptanceRate
         ? FlowStrings.verificationSuccessSubtitle
         : FlowStrings.verificationFailSubtitle
     }
 
     private var borderColor: Color {
-        if match > 50 { return Color(BaseTheme.baseGreenColor) }
-        if match > 30 { return Color(BaseTheme.baseAccentColor) }
+        if match > BaseTheme.faceAcceptanceRate { return Color(BaseTheme.baseGreenColor) }
         return Color(BaseTheme.baseRedColor)
     }
 
@@ -162,7 +161,7 @@ public struct FaceResultScreen: View {
     private var bottomActions: some View {
         VStack(spacing: 10) {   // 👈 small clean spacing
             
-            if match > 50 {
+            if match > BaseTheme.faceAcceptanceRate {
                 
                 BaseClickButton(
                     title: FlowStrings.next,
@@ -172,43 +171,26 @@ public struct FaceResultScreen: View {
                     action: onNext
                 )
 
-            } else if match > 30 {
+            } else {
 
-                BaseClickButton(
-                    title: FlowStrings.retry,
-                    cornerRadius: 28,
-                    verticalPadding: 18,
-                    enabled: true,
-                    action: onRetry
-                )
-
+              
                 OutlineButton(
-                    title: FlowStrings.confirmAndProceed,
+                    title: FlowStrings.retry,
                     cornerRadius: 28,
                     borderColor: Color(BaseTheme.baseAccentColor),
                     textColor: Color(BaseTheme.baseAccentColor),
                     height: 55,
-                    action: onNext
+                    action: onRetry
                 )
-
-            } else {
-
-//                BaseClickButton(
-//                    title: FlowStrings.provideSupportingId,
-//                    cornerRadius: 28,
-//                    verticalPadding: 18,
-//                    enabled: true,
-//                    action: onIDChange,
-//                )
-
-                OutlineButton(
-                    title: FlowStrings.overrideAndProceed,
+                
+                BaseClickButton(
+                    title: FlowStrings.next,
                     cornerRadius: 28,
-                    borderColor: Color(BaseTheme.baseRedColor),
-                    textColor: Color(BaseTheme.baseRedColor),
-                    height: 55,
-                    action: onNext
+                    verticalPadding: 18,
+                    enabled: true,
+                    action:onNext
                 )
+
             }
         }
     }
@@ -234,8 +216,7 @@ public struct MatchProgressView: View {
     }
 
     private var progressColor: Color {
-        if percentage > 50 { return Color(BaseTheme.baseGreenColor) }
-        if percentage > 30 { return Color(BaseTheme.baseAccentColor) }
+        if percentage > BaseTheme.faceAcceptanceRate { return Color(BaseTheme.baseGreenColor) }
         return Color(BaseTheme.baseRedColor)
     }
 
