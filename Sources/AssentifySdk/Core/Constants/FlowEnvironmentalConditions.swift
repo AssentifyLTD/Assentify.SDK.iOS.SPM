@@ -189,7 +189,7 @@ public final class FlowEnvironmentalConditions {
         stepperType: StepperType = StepperType.normal,
         rangeStart: Int = 25,
         rangeEnd: Int = 50,
-        stepperTitle: String = "Identification",
+        stepperTitle: String = "Identity check",
         extractedDataLanguage: String = Language.NON,
         enableNfc: Bool = false,
         enableQr: Bool = false,

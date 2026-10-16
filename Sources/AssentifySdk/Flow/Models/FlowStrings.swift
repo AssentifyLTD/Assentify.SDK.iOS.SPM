@@ -9,7 +9,7 @@ public struct FlowStrings {
     // MARK: - Common Buttons
 
     public static var next: String { isArabic ? "التالي" : "Next" }
-    public static var retry: String { isArabic ? "إعادة المحاولة" : "Retry" }
+    public static var retry: String { isArabic ? "إعادة المحاولة" : "Try again" }
     public static var skip: String { isArabic ? "تخطي" : "Skip" }
     public static var decline: String { isArabic ? "رفض" : "Decline" }
     public static var close: String { isArabic ? "إغلاق" : "Close" }
@@ -100,31 +100,31 @@ public struct FlowStrings {
 
     public static func onlySupportedIds(flowName: String) -> String {
         isArabic
-        ? "الهويات المعروضة فقط مدعومة ومقبولة من قبل \(flowName). تأكد من تقديم واحدة منها."
-        : "Only the presented IDs are supported and accepted by \(flowName). Make sure to provide one of them."
+        ? "يقبل \(flowName) المعرّفات المذكورة أعلاه فقط. يرجى تقديم أحد أنواع المعرّفات المدعومة."
+        : "Only the IDs listed above are accepted by \(flowName). Please provide one of the supported ID types."
     }
 
     public static var presentPassport: String { isArabic ? "قدّم جواز سفرك" : "Present Your Passport" }
     public static var presentId: String { isArabic ? "قدّم هويتك" : "Capture your ID" }
     public static var watchCapturePassport: String { isArabic ? "شاهد كم هو سهل التقاط جواز سفرك" : "Watch How Easy It Is To Capture Your Passport" }
-    public static var watchCaptureId: String { isArabic ? "شاهد كم هو سهل التقاط هويتك" : "See how it works" }
+    public static var watchCaptureId: String { isArabic ? "شاهد طريقة التقاط صورة شخصية" : "See how it works" }
 
     public static var idLightingHint: String {
         isArabic
-        ? "تأكد فقط من أنك في منطقة مضاءة جيداً بدون انعكاس ضوء مباشر على الهوية أو جواز السفر المقدم."
-        : "Just make sure to be in a well lit area with no direct light reflecting on the ID or Passport presented."
+        ? "تأكد من وجودك في مكان جيد الإضاءة، وتجنب الضوء المباشر أو الانعكاسات على بطاقة هويتك أو جواز سفرك"
+        : "Make sure you're in a well-lit area and avoid direct light or glare on your ID or passport"
     }
 
     // MARK: - Face Step
 
     public static var faceMatch: String { isArabic ? "مطابقة الوجه" : "Face match" }
-    public static var watchCaptureSelfieMultiline: String { isArabic ? "شاهد كم هو سهل\nالتقاط صورة سيلفي" : "Watch How Easy It Is\nTo Take A Selfie" }
-    public static var watchCaptureSelfieSingleLine: String { isArabic ? "شاهد كم هو سهل التقاط صورة سيلفي" : "Watch How Easy It Is To Take A Selfie" }
+    public static var watchCaptureSelfieMultiline: String { isArabic ? "شاهد كم هو سهل\nالتقاط صورة سيلفي" : "See how to take a selfie" }
+    public static var watchCaptureSelfieSingleLine: String { isArabic ? "شاهد طريقة التقاط صورة شخصية": "See how to take a selfie" }
 
     public static var faceLivenessHint: String {
         isArabic
-        ? "تتضمن صورة السيلفي التقاط حيوية للتأكد من أنك حقيقي، اتبع التعليمات على الشاشة."
-        : "The selfie includes liveness capture to ensure you're real, follow the on screen instructions."
+        ? "تتضمن صورتك الشخصية فحصًا للحيوية للتحقق من هويتك.\nاتبع التعليمات الظاهرة على الشاشة لإكمال العملية."
+        : "Your selfie includes a liveness check to verify your identity.\nFollow the on-screen instructions to complete the process."
     }
 
     // MARK: - QR Step
@@ -162,19 +162,19 @@ public struct FlowStrings {
         : "Make sure presented ID is clear and does not have any light reflections on it. Try presenting the ID vertically if your camera resolution is low to ease the extraction process."
     }
 
-    public static var processingIdWait: String { isArabic ? "جارٍ معالجة الهوية يرجى الانتظار" : "Processing ID please wait" }
-    public static var uploadingIdWait: String { isArabic ? "جارٍ رفع الهوية يرجى الانتظار" : "Uploading ID please wait" }
+    public static var processingIdWait: String { isArabic ? "جارٍ معالجة هويتك...\nيرجى الانتظار" : "Processing your ID ...\nPlease wait" }
+    public static var uploadingIdWait: String { isArabic ? "جارٍ رفع هويتك...\nيرجى الانتظار" : "Uploading your ID ...\nPlease wait"}
 
     public static var captureBackOfId: String { isArabic ? "التقط الجهة الخلفية للهوية" : "Capture back of ID" }
-    public static var flipCardHint: String { isArabic ? "يرجى قلب البطاقة المقدمة لالتقاط الجهة الخلفية" : "Please flip the card provided to take the back of the card" }
+    public static var flipCardHint: String { isArabic ? "يرجى قلب البطاقة المقدمة لالتقاط الجهة الخلفية" : "Flip your ID and capture the back" }
     public static var expectedCardType: String { isArabic ? "نوع البطاقة المتوقع" : "Expected Card Type" }
 
-    public static var wrongTemplate: String { isArabic ? "هوية غير مدعومة \n قالب خاطئ" : "Unsupported ID Provided \n Wrong Template" }
+    public static var wrongTemplate: String { isArabic ? "لا يمكننا التحقق من هذه الهوية" : "We can't verify this ID" }
 
     public static func wrongTemplateHint(flowName: String) -> String {
         isArabic
-        ? "تأكد من أنها واحدة من الهويات المعروضة أعلاه والمسموح بها من قبل \(flowName) للتحقق من هويتك."
-        : "Make sure its one of the above IDs presented and allowed by \(flowName) to verify your identity."
+        ? "يرجى استخدام أحد مستندات الهوية المقبولة الموضحة أعلاه والمحاولة مرة أخرى."
+        : "Please use one of the accepted identification documents shown above and try again."
     }
 
     public static var notRealId: String { isArabic ? "يبدو أنك لم تقدم هوية حقيقية" : "Seems like you didn't provide a real ID" }
@@ -320,8 +320,8 @@ public struct FlowStrings {
     public static var winkRightEye: String { isArabic ? "يرجى الغمز بعينك اليمنى" : "Please wink your right eye" }
     public static var blinkEyes: String { isArabic ? "يرجى الرمش بعينيك" : "Please blink your eyes" }
 
-    public static var processingFaceWait: String { isArabic ? "جارٍ معالجة الوجه يرجى الانتظار" : "Processing Face please wait" }
-    public static var uploadingFaceWait: String { isArabic ? "جارٍ رفع الوجه يرجى الانتظار" : "Uploading Face please wait" }
+    public static var processingFaceWait: String { isArabic ? "جارٍ معالجة صورتك الذاتية...\nيرجى الانتظار": "Processing your selfie ...\nPlease wait"}
+    public static var uploadingFaceWait: String { isArabic ? "جارٍ رفع صورتك الشخصية...\nيرجى الانتظار": "Uploading your selfie ...\nPlease wait" }
 
     // MARK: - Face Result Screen
 
