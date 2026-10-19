@@ -37,7 +37,7 @@ public class EnvironmentalConditions {
 
 
     public  init(
-        enableDetect: Bool = true,
+        enableDetect: Bool = false,
         CountDownNumbersColor: String = "#00FFFFFF",
         HoldHandColor: String,
         BRIGHTNESS_HIGH_THRESHOLD :Double  = 255.0,
