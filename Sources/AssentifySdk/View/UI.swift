@@ -473,7 +473,7 @@ class Guide{
         var countdownValue = 3
         countdownLabel.text = "\(countdownValue)"
         
-        let countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { timer in
+        let countdownTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { timer in
             if countdownValue > 1 {
                 countdownValue -= 1
                 countdownLabel.text = "\(countdownValue)"

@@ -31,6 +31,8 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
     private var apiKey: String
     private var performLivenessFace: Bool?
     private var performPassiveLivenessFace: Bool?
+    private var performPassiveLivenessFaceChanged: Bool? = false
+    private var  imageDuringActiveLiveness : CVPixelBuffer?;
     private var saveCapturedVideoFace: Bool?
     private var storeImageStream: Bool?
     private var secondImage: String?
@@ -415,6 +417,13 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                         if (self.performLivenessFace! && !self.areAllEventsDone() && self.environmentalConditions?.activeLiveType != ActiveLiveType.NONE && self.environmentalConditions?.activeLivenessCheckCount != 0) {
                             if(self.canCheckLive && self.environmentalConditions?.activeLiveType == ActiveLiveType.ACTIONS){
                                 self.isSpecificItemFlagEqualToActions(targetEvent: faceEvent);
+                                if(self.performPassiveLivenessFaceChanged!){
+                                    if(faceEvent == FaceEvents.GOOD){
+                                        if(!self.areAllEventsDone()){
+                                            self.imageDuringActiveLiveness = pixelBuffer;
+                                        }
+                                    }
+                                }
                             }
                             
                         }
@@ -427,6 +436,13 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                             if (self.performLivenessFace! && !self.areAllEventsDone() && self.environmentalConditions?.activeLiveType != ActiveLiveType.NONE && self.environmentalConditions?.activeLivenessCheckCount != 0) {
                                 if(self.canCheckLive){
                                     self.isSpecificItemFlagEqualToWinkAndBLINK(targetEvent: faceEvent);
+                                    if(self.performPassiveLivenessFaceChanged!){
+                                        if(faceEvent == FaceEvents.GOOD){
+                                            if(!self.areAllEventsDone()){
+                                                self.imageDuringActiveLiveness = pixelBuffer;
+                                            }
+                                        }
+                                    }
                                 }
                                 
                             }
@@ -519,7 +535,7 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                                                 let middleIndex = clips.count / 2
                                                 selfieImage = clips[middleIndex]
                                          } else {
-                                                selfieImage = convertPixelToDataImage(pixelBuffer: pixelBuffer)!
+                                             selfieImage = (self.performPassiveLivenessFaceChanged == true ? convertPixelToDataImage(pixelBuffer: self.imageDuringActiveLiveness!) :convertPixelToDataImage(pixelBuffer: pixelBuffer)!)!
                                         }
                                         var secondDataImage = base64ToData(self.secondImage!)!
                                         ///
@@ -571,7 +587,7 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                                         let middleIndex = clips.count / 2
                                         selfieImage = clips[middleIndex]
                                  } else {
-                                        selfieImage = convertPixelToDataImage(pixelBuffer: pixelBuffer)!
+                                     selfieImage = (self.performPassiveLivenessFaceChanged == true ? convertPixelToDataImage(pixelBuffer: self.imageDuringActiveLiveness!) :convertPixelToDataImage(pixelBuffer: pixelBuffer)!)!
                                 }
                             var secondDataImage = base64ToData(self.secondImage!)!
                             ///
@@ -655,12 +671,15 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                     if(self.livnessRetryCount == self.environmentalConditions?.faceLivenessRetryCount){
                         self.livnessRetryCount = 0;
                         if(self.environmentalConditions?.activeLiveType == ActiveLiveType.NONE || self.environmentalConditions?.activeLivenessCheckCount == 0){
-                            self.environmentalConditions?.activeLivenessCheckCount = 3;
+                            self.environmentalConditions?.activeLivenessCheckCount = 2;
                             self.environmentalConditions?.activeLiveType = ActiveLiveType.ACTIONS
                         }
                         self.performLivenessFace = true;
                         self.fillCompletionMap();
                         self.resetActiveLive();
+                        self.performPassiveLivenessFace = false;
+                        self.performPassiveLivenessFaceChanged = true;
+                        self.localLivenessLimit = 0;
 
                     }
                 }
@@ -833,7 +852,7 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                     }
                 }
             } else {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
                     self.canCheckLive = true;
                     self.nextMove();
                 }
