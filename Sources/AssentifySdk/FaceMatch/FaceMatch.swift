@@ -32,7 +32,7 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
     private var performLivenessFace: Bool?
     private var performPassiveLivenessFace: Bool?
     private var performPassiveLivenessFaceChanged: Bool? = false
-    private var  imageDuringActiveLiveness : CVPixelBuffer?;
+    private var imageDuringActiveLiveness : CVPixelBuffer?;
     private var saveCapturedVideoFace: Bool?
     private var storeImageStream: Bool?
     private var secondImage: String?
@@ -53,6 +53,8 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
     
     
     private var faceQualityCheck = FaceQualityCheck()
+    private var frontalFaceChecker = FrontalFaceChecker()
+
     private var faceEvent = FaceEvents.NO_DETECT;
     private var eventCompletionList: [FaceEventStatus] = []
     private var audioPlayer = AssetsAudioPlayer();
@@ -420,7 +422,15 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                                 if(self.performPassiveLivenessFaceChanged!){
                                     if(faceEvent == FaceEvents.GOOD){
                                         if(!self.areAllEventsDone()){
-                                            self.imageDuringActiveLiveness = pixelBuffer;
+                                            if(self.imageDuringActiveLiveness == nil){
+                                                self.imageDuringActiveLiveness = pixelBuffer;
+                                            }
+                                            self.frontalFaceChecker.check(downscaledBuffer, orientation: .up) { result in
+                                                guard let result = result else {
+                                                    return
+                                                }
+                                              self.imageDuringActiveLiveness = pixelBuffer;
+                                            }
                                         }
                                     }
                                 }
@@ -439,7 +449,15 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                                     if(self.performPassiveLivenessFaceChanged!){
                                         if(faceEvent == FaceEvents.GOOD){
                                             if(!self.areAllEventsDone()){
-                                                self.imageDuringActiveLiveness = pixelBuffer;
+                                                if(self.imageDuringActiveLiveness == nil){
+                                                    self.imageDuringActiveLiveness = pixelBuffer;
+                                                }
+                                                self.frontalFaceChecker.check(downscaledBuffer, orientation: .up) { result in
+                                                    guard let result = result else {
+                                                        return
+                                                    }
+                                                  self.imageDuringActiveLiveness = pixelBuffer;
+                                                }
                                             }
                                         }
                                     }
@@ -670,10 +688,8 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
                 if(!self.isManual){
                     if(self.livnessRetryCount == self.environmentalConditions?.faceLivenessRetryCount){
                         self.livnessRetryCount = 0;
-                        if(self.environmentalConditions?.activeLiveType == ActiveLiveType.NONE || self.environmentalConditions?.activeLivenessCheckCount == 0){
-                            self.environmentalConditions?.activeLivenessCheckCount = 2;
-                            self.environmentalConditions?.activeLiveType = ActiveLiveType.ACTIONS
-                        }
+                        self.environmentalConditions?.activeLivenessCheckCount = 2;
+                        self.environmentalConditions?.activeLiveType = ActiveLiveType.ACTIONS
                         self.performLivenessFace = true;
                         self.fillCompletionMap();
                         self.resetActiveLive();
