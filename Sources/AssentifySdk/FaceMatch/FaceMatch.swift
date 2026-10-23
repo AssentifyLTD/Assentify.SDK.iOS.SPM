@@ -848,7 +848,9 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
     private func successActiveLive() {
         if(self.canCheckLive){
             self.canCheckLive = false;
-            audioPlayer.playAudio(fileName: ConstantsValues.AudioFaceSuccess);
+            DispatchQueue.main.async {
+                self.audioPlayer.playAudio(fileName: ConstantsValues.AudioFaceSuccess);
+            }
             DispatchQueue.main.async {
                 self.clearLiveUi();
                 self.successLiveView =  self.guide.showSuccessLiveCheck(view: self.view)
@@ -881,7 +883,9 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
     func resetActiveLive() {
         if(self.canCheckLive){
             self.canCheckLive = false
-            audioPlayer.playAudio(fileName: ConstantsValues.AudioWrong);
+            DispatchQueue.main.async {
+                self.audioPlayer.playAudio(fileName: ConstantsValues.AudioWrong);
+            }
             DispatchQueue.main.async {
                 self.clearLiveUi();
                 if(self.successLiveView != nil){
@@ -958,7 +962,9 @@ public class FaceMatch :UIViewController, CameraSetupDelegate , RemoteProcessing
     
     
     public func stopScanning(){
-        audioPlayer.stopAudio();
+        DispatchQueue.main.async {
+            self.audioPlayer.stopAudio();
+        }
         self.previewView.stopSession();
         self.cameraFeedManager.stopSession();
     }
