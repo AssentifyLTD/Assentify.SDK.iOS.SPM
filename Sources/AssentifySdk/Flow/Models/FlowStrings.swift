@@ -90,7 +90,7 @@ public struct FlowStrings {
     
     // MARK: - ID Step
 
-    public static var chooseCountry: String { isArabic ? "اختر بلد الإصدار" : "Choose your country of issuance" }
+    public static var chooseCountry: String { isArabic ? "اختر جنسيتك" : "Choose your nationality" }
     public static var selectDocumentType: String { isArabic ? "اختر نوع المستند" : "Select type of document" }
     public static var selectCountry: String { isArabic ? "اختر البلد" : "Select country" }
     public static var passport: String { isArabic ? "جواز السفر" : "Passport" }

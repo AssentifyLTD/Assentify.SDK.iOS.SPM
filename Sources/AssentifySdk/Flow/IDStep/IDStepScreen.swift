@@ -178,7 +178,20 @@ public struct IDStepScreen: View {
                 TemplatesBottomSheet(
                     title: FlowStrings.supportedIds,
                     templates: country.templates,
-                    onClose: { showIdsSheet = false }
+                    onClose: { showIdsSheet = false },
+                    onTap: {
+                        selectedTemplate =  Templates(
+                            id: 1,
+                            sourceCountryFlag:"",
+                            sourceCountryCode:  country.sourceCountryCode,
+                            kycDocumentType: FlowStrings.allIds,
+                            sourceCountry:"",
+                            kycDocumentDetails: []
+                        )
+                        SelectedTemplatesObject.shared.set(selectedTemplate!)
+                        onNext();
+                       
+                    }
                 )
             }
         }
@@ -398,6 +411,7 @@ struct TemplatesBottomSheet: View {
     let title: String
     let templates: [Templates]
     let onClose: () -> Void
+    let onTap: () -> Void
 
     var body: some View {
         BaseBackgroundContainer {
@@ -424,7 +438,10 @@ struct TemplatesBottomSheet: View {
                 ScrollView {
                     VStack(spacing: 12) {
                         ForEach(templates, id: \.id) { t in
-                            TemplateRow(template: t)
+                            TemplateRow(template: t, onTap: {
+                                onTap();
+                                onClose();
+                            })
                         }
                     }
                     .padding(.bottom, 16)
@@ -438,41 +455,47 @@ struct TemplatesBottomSheet: View {
 
 struct TemplateRow: View {
     let template: Templates
+    var onTap: () -> Void = {}
 
     var iconUrl: String? {
-        template.kycDocumentDetails.first?.templateSpecimen.trimmingCharacters(in: .whitespacesAndNewlines)
+        template.kycDocumentDetails.first?.templateSpecimen
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var body: some View {
-        HStack(spacing: 12) {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(BaseTheme.fieldColor))
+                        .frame(width: 60, height: 60)
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(BaseTheme.fieldColor))
-                    .frame(width: 60, height: 60)
-
-                if let iconUrl, !iconUrl.isEmpty, let url = URL(string: iconUrl) {
-                    AsyncImage(url: url) { img in
-                        img.resizable().scaledToFit()
-                    } placeholder: {
-                        ProgressView()
+                    if let iconUrl, !iconUrl.isEmpty, let url = URL(string: iconUrl) {
+                        AsyncImage(url: url) { img in
+                            img.resizable().scaledToFit()
+                        } placeholder: {
+                            ProgressView()
+                        }
+                        .frame(width: 60, height: 60)
                     }
-                    .frame(width: 60, height: 60)
                 }
+
+                Text(template.kycDocumentType)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color(BaseTheme.baseTextColor))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+
+                Spacer()
             }
-
-            Text(template.kycDocumentType)
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color(BaseTheme.baseTextColor))
-                .lineLimit(2)
-
-            Spacer()
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(Color(BaseTheme.fieldColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+            .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity)
-        .background(Color(BaseTheme.fieldColor))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+        .buttonStyle(.plain)
     }
 }
 ////
