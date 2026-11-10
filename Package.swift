@@ -39,6 +39,8 @@ let package = Package(
             resources: [
                 .copy("Resources/best-fp16.tflite"),
                 .copy("Resources/classes.txt"),
+                .copy("Resources/finder_fp32.tflite"),
+                .copy("Resources/classification.tflite"),
                 .process("Resources/card_background.svg"),
                 .process("Resources/face_background.svg"),
                 .process("Resources/passport_background.svg"),
@@ -63,8 +65,6 @@ let package = Package(
                 .process("Resources/ic_terms_step.svg"),
                 .process("Resources/id_card.svg"),
                 .process("Resources/ic_passport.svg"),
-                .process("Resources/passport-video.mp4"),
-                .process("Resources/id-video.mp4"),
                 .process("Resources/face-video.mp4"),
                 .process("Resources/ic_bar.svg"),
                 .process("Resources/ic_scan_id.svg"),
@@ -80,7 +80,23 @@ let package = Package(
                 .process("Resources/ic_phone.svg"),
                 .process("Resources/ic_warning.svg"),
                 .process("Resources/ic_document_capture.svg"),
-                .process("Resources/ic_questionnaire_step.svg")
+                .process("Resources/ic_questionnaire_step.svg"),
+                .process("Resources/id_bottom_tilt_preview.gif"),
+                .process("Resources/passport_tilt_preview.gif"),
+                .process("Resources/rectifier_config_file.json"),
+                .process("Resources/card_back_background.svg"),
+                .process("Resources/id_right_tilt_preview.gif"),
+                .process("Resources/id_top_tilt_preview.gif"),
+                .process("Resources/held-card-arrow.svg"),
+                .process("Resources/held-card-card.svg"),
+                .process("Resources/held-card-lines.svg"),
+                .process("Resources/held-card-table.svg"),
+                .process("Resources/passport-video-en.mp4"),
+                .process("Resources/id-video-en.mp4"),
+                .process("Resources/passport-video-ar.mp4"),
+                .process("Resources/id-video-ar.mp4"),
+                .process("Resources/id_barcode_gif.gif")
+                
             ]
         ),
         .testTarget(

@@ -274,9 +274,9 @@ struct DocumentPickerCards: View {
                             Templates(
                                 id: -1,
                                 sourceCountryFlag:"",
-                                sourceCountryCode: "",
+                                sourceCountryCode:country.sourceCountryCode,
                                 kycDocumentType: FlowStrings.passport,
-                                sourceCountry:"",
+                                sourceCountry:country.sourceCountryCode,
                                 kycDocumentDetails: []
                             )
                         )
@@ -300,7 +300,7 @@ struct DocumentPickerCards: View {
                                     sourceCountryFlag:"",
                                     sourceCountryCode:  country.sourceCountryCode,
                                     kycDocumentType: FlowStrings.allIds,
-                                    sourceCountry:"",
+                                    sourceCountry:country.sourceCountryCode,
                                     kycDocumentDetails: []
                                 )
                             )

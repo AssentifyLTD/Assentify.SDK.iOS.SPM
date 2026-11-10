@@ -1,6 +1,7 @@
 
 
 import Foundation
+import UIKit
 
 @objc public protocol ScanPassportDelegate{
     func onError(dataModel: RemoteProcessingModel )
@@ -22,7 +23,7 @@ import Foundation
 
     @objc optional func onUpdated(dataModel: RemoteProcessingModel )
 
-    @objc optional func onLivenessUpdate(dataModel: RemoteProcessingModel )
+    @objc optional func onLivenessUpdate(dataModel: RemoteProcessingModel , image: UIImage?)
 
     @objc optional func onCardDetected(dataModel: RemoteProcessingModel )
 
@@ -52,4 +53,6 @@ import Foundation
            zoom: ZoomType,
            isCentered:Bool
        )
+
+    @objc optional func onLivenessInstruction(instruction: PassportLivenessInstruction, progress: Int)
 }
