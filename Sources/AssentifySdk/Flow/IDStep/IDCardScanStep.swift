@@ -10,10 +10,9 @@ struct IDScanEvents {
     var onError: ((RemoteProcessingModel) -> Void)? = nil
     var onRetry: ((RemoteProcessingModel) -> Void)? = nil
     var onWrongTemplate: ((RemoteProcessingModel) -> Void)? = nil
-    
-    var onLivenessUpdate: ((RemoteProcessingModel) -> Void)? = nil
-    
+    var onLivenessUpdate: ((RemoteProcessingModel, UIImage?) -> Void)? = nil   // image: the local liveness's (nil = server)
     var onEnvironmental: ((BrightnessEvents, MotionType, ZoomType, Bool) -> Void)? = nil
+    var onLivenessInstruction: ((IdLivenessInstruction, Int) -> Void)? = nil
 }
 
 enum IDScreenEvent {
@@ -40,6 +39,7 @@ public struct IDCardScanStep: View {
     @State private var start: Bool = false
     @State private var feedbackText: String = ""
     @State private var imageUrl: String = ""
+    @State private var livenessImage: UIImage? = nil                // the local liveness's image (nil = use imageUrl)
     @State private var uploadProgress: Int = 0
     @State private var screenEvent: IDScreenEvent = .idle
     
@@ -50,6 +50,14 @@ public struct IDCardScanStep: View {
     @State private var kycDocumentDetails: [KycDocumentDetails] = []
     @State private var templatesByCountry: TemplatesByCountry?
     @State private var extractedInformation: [String:String] = [:]
+
+    // card liveness: the tilt meter (0..100) under the instruction, and who owns the instruction text
+    @State private var tiltProgress: Int = 0
+    @State private var tiltProgressVisible: Bool = false
+    @State private var livenessActive: Bool = false
+
+    // "Hold the card in your hand": shown on top of the camera when the scan opens, until Continue
+    @State private var showHoldPopup: Bool = true
     
     @StateObject private var commands = IDScanCommands()
     private let timeStarted :String = getCurrentDateTimeForTracking();
@@ -89,7 +97,6 @@ public struct IDCardScanStep: View {
         templatesByCountry = templates.first(where: { $0.sourceCountryCode == selectedCode })
     }
     
-    
     private var templatesByCountryValue: TemplatesByCountry? {
         guard
             let stepId = flowController.getCurrentStep()?.stepDefinition?.stepId,
@@ -100,7 +107,6 @@ public struct IDCardScanStep: View {
         return  templates.first(where: { $0.sourceCountryCode == selectedCode })
     }
     
-    
     private func onBack() {
         commands.triggerClose += 1
         flowController.pop(animated: true)
@@ -109,7 +115,6 @@ public struct IDCardScanStep: View {
     private func onNext() {
         if (!isNavigating) {
             isNavigating = true
-            //        DispatchQueue.main.async { screenEvent = .idle }
             commands.triggerClose += 1
             
             if (FlowEnvironmentalConditionsObject.shared.get()!.enableQr && kycDocumentDetails
@@ -120,14 +125,64 @@ public struct IDCardScanStep: View {
                 flowController.naveToNextStep();
             }
         }
-        
+    }
+
+    /// Back to the camera after a retry / error / wrong template / liveness screen: the side starts again
+    /// (HostVC.retry() -> ScanIDCard.retryLiveness(); the old capture and the manual capture restart the same way).
+    private func retryScan() {
+        DispatchQueue.main.async {
+            screenEvent = .idle
+            start = true
+            feedbackText = ""
+            livenessImage = nil
+            tiltProgress = 0
+            tiltProgressVisible = false
+            livenessActive = false
+            commands.triggerRetry += 1
+        }
+    }
+
+    /// The flip screen's button: the back (the classifier and the liveness start again for it).
+    private func flipToBack() {
+        DispatchQueue.main.async {
+            screenEvent = .idle
+            start = true
+            feedbackText = ""
+            livenessImage = nil                                     // the back never shows the front's image
+            tiltProgress = 0
+            tiltProgressVisible = false
+            livenessActive = false
+            commands.triggerFlep += 1                               // ScanIDCard.changeTemplateId()
+        }
+    }
+
+    /// Track Progress for the retry-like screens.
+    private func track(_ model: RemoteProcessingModel, _ label: String) {
+        let currentStep = flowController.getCurrentStep()
+        let errorString = model.responseJsonObject?["error"] as? String
+        let extracted = flowController.extractAfterDash(errorString)
+        let finalResponse = extracted.isEmpty ? label : "\(label) - \(extracted)"
+        flowController.trackProgress(
+            currentStep: currentStep!,
+            inputData: flowController.decodeToJsonObject(model.response),
+            response: finalResponse,
+            status: "InProgress"
+        )
+    }
+
+    private func imageUrlOf(_ model: RemoteProcessingModel) -> String {
+        guard let response = model.response, !response.isEmpty else { return "" }   // the local liveness has no image URL
+        return getImageUrlFromBaseResponseDataModel(jsonString: response)
     }
     
     public var body: some View {
         
         let events = IDScanEvents(
             onSend: {
-                DispatchQueue.main.async { start = true }
+                DispatchQueue.main.async {
+                    start = true
+                    tiltProgressVisible = false
+                }
             },
             onProgress: { p in
                 DispatchQueue.main.async {
@@ -141,8 +196,8 @@ public struct IDCardScanStep: View {
                     isFrontPage = front
                     isLastPage = last
                     self.classifiedTemplate = template;
-                    if !classifiedTemplate.isEmpty {
-                        for template in self.templatesByCountry!.templates {
+                    if !classifiedTemplate.isEmpty, let tbc = self.templatesByCountry ?? templatesByCountryValue {
+                        for template in tbc.templates {
                             for detail in template.kycDocumentDetails {
                                 if detail.templateProcessingKeyInformation == classifiedTemplate {
                                     kycDocumentDetails = template.kycDocumentDetails
@@ -151,33 +206,28 @@ public struct IDCardScanStep: View {
                         }
                     }
                     
-                    
                     var currentMap = extractedInformation
-                    
                     if let newProps = model.iDExtractedModel?.transformedProperties {
                         let filtered = newProps.filter { key, _ in
                             !key.isEmpty && currentMap[key] == nil
                         }
                         currentMap.merge(filtered) { current, _ in current }
                     }
-                    
                     extractedInformation = currentMap
-                    
-                    
-                    
                     
                     OnCompleteScreenData.shared.clear();
                     OnCompleteScreenData.shared.set(extractedInformation)
+
+                    start = false
+                    feedbackText = ""
+                    uploadProgress = 0
+                    tiltProgressVisible = false
+                    livenessActive = false
                     
                     if(isLastPage){
-                        start = false
-                        feedbackText = ""
-                        uploadProgress = 0
                         screenEvent = .completed
                         /** Track Progress **/
                         let currentStep = flowController.getCurrentStep()
-                       
-
                         flowController.trackProgress(
                             currentStep: currentStep!,
                             inputData: extractedInformation,
@@ -185,13 +235,8 @@ public struct IDCardScanStep: View {
                             status: "InProgress"
                         )
                         /**/
-                        
                     }else{
-                        start = false
-                        feedbackText = ""
-                        uploadProgress = 0
-                        screenEvent = .flip
-                        commands.triggerFlep += 1
+                        screenEvent = .flip                         // the back starts when the flip screen's button is pressed
                     }
                     
                     if(isFrontPage){
@@ -206,181 +251,88 @@ public struct IDCardScanStep: View {
                             }
                         }
                     }
-                    
-                    
-                    
                 }
             },
             onError: { model in
                 DispatchQueue.main.async {
                     start = false
-                    do {
-                        if let response = model.response {
-                            imageUrl = getImageUrlFromBaseResponseDataModel(jsonString: response)
-                        } else {
-                            imageUrl = ""
-                        }
-                    } catch {
-                        imageUrl = ""
-                    }
+                    tiltProgressVisible = false
+                    imageUrl = imageUrlOf(model)
                     screenEvent = .error
-                    
-                    /** Track Progress **/
-                    let currentStep = flowController.getCurrentStep()
-                    let errorString = model.responseJsonObject?["error"] as? String
-                    let extracted = flowController.extractAfterDash(errorString)
-
-                    let finalResponse = extracted.isEmpty
-                        ? "Error"
-                        : "Error - \(extracted)"
-
-                    flowController.trackProgress(
-                        currentStep: currentStep!,
-                        inputData: flowController.decodeToJsonObject(model.response),
-                        response: finalResponse,
-                        status: "InProgress"
-                    )
-                    /**/
+                    track(model, "Error")
                 }
             },
             onRetry: { model in
                 DispatchQueue.main.async {
                     start = false
-                    do {
-                        if let response = model.response {
-                            imageUrl = getImageUrlFromBaseResponseDataModel(jsonString: response)
-                        } else {
-                            imageUrl = ""
-                        }
-                    } catch {
-                        imageUrl = ""
-                    }
+                    tiltProgressVisible = false
+                    imageUrl = imageUrlOf(model)
                     screenEvent = .retry
-                    
-                    /** Track Progress **/
-                    let currentStep = flowController.getCurrentStep()
-                    let errorString = model.responseJsonObject?["error"] as? String
-                    let extracted = flowController.extractAfterDash(errorString)
-
-                    let finalResponse = extracted.isEmpty
-                        ? "onRetry"
-                        : "onRetry - \(extracted)"
-
-                    flowController.trackProgress(
-                        currentStep: currentStep!,
-                        inputData: flowController.decodeToJsonObject(model.response),
-                        response: finalResponse,
-                        status: "InProgress"
-                    )
-                    /**/
+                    track(model, "onRetry")
                 }
             },
             onWrongTemplate: { model in
                 DispatchQueue.main.async {
                     start = false
-                    do {
-                        if let response = model.response {
-                            imageUrl = getImageUrlFromBaseResponseDataModel(jsonString: response)
-                        } else {
-                            imageUrl = ""
-                        }
-                    } catch {
-                        imageUrl = ""
-                    }
+                    tiltProgressVisible = false
+                    imageUrl = imageUrlOf(model)
                     screenEvent = .wrongTemplate
-                    /** Track Progress **/
-                    let currentStep = flowController.getCurrentStep()
-                    let errorString = model.responseJsonObject?["error"] as? String
-                    let extracted = flowController.extractAfterDash(errorString)
-
-                    let finalResponse = extracted.isEmpty
-                        ? "onWrongTemplate"
-                        : "onWrongTemplate - \(extracted)"
-
-                    flowController.trackProgress(
-                        currentStep: currentStep!,
-                        inputData: flowController.decodeToJsonObject(model.response),
-                        response: finalResponse,
-                        status: "InProgress"
-                    )
-                    /**/
+                    track(model, "onWrongTemplate")
                 }
             },
-            onLivenessUpdate: { model in
+            // the server's liveness failure (image nil: its URL), or the LOCAL card liveness failed (the camera's image)
+            onLivenessUpdate: { model, image in
                 DispatchQueue.main.async {
+                    livenessActive = false
                     start = false
-                    do {
-                        if let response = model.response {
-                            imageUrl = getImageUrlFromBaseResponseDataModel(jsonString: response)
-                        } else {
-                            imageUrl = ""
-                        }
-                    } catch {
-                        imageUrl = ""
-                    }
+                    tiltProgressVisible = false
+                    livenessImage = image
+                    imageUrl = image != nil ? "" : imageUrlOf(model)
                     screenEvent = .liveness
-                    /** Track Progress **/
-                    let currentStep = flowController.getCurrentStep()
-                    let errorString = model.responseJsonObject?["error"] as? String
-                    let extracted = flowController.extractAfterDash(errorString)
-
-                    let finalResponse = extracted.isEmpty
-                        ? "onLivenessUpdate"
-                        : "onLivenessUpdate - \(extracted)"
-
-                    flowController.trackProgress(
-                        currentStep: currentStep!,
-                        inputData: flowController.decodeToJsonObject(model.response),
-                        response: finalResponse,
-                        status: "InProgress"
-                    )
-                    /**/
+                    track(model, "onLivenessUpdate")
                 }
             },
             onEnvironmental: { brightnessEvents, motion, zoom, isCentered in
                 DispatchQueue.main.async {
-                    
-                        
-                        if zoom != .SENDING && zoom != .NO_DETECT {
-                            
-                            if zoom == .ZOOM_IN {
-                                feedbackText = FlowStrings.moveIdCloser
-                            } else if zoom == .ZOOM_OUT {
-                                feedbackText = FlowStrings.moveIdFurther
-                            } else {
-                                feedbackText = ""
-                            }
-
-                        } else if motion != .SENDING && motion != .NO_DETECT {
-
-                            feedbackText = FlowStrings.holdYourHand
-
-                        } else if brightnessEvents != .Good {
-
-                            if brightnessEvents == .TooDark {
-                                feedbackText = FlowStrings.increaseLighting
-                            } else if brightnessEvents == .TooBright {
-                                feedbackText = FlowStrings.reduceLighting
-                            } else {
-                                feedbackText = ""
-                            }
-
+                    if livenessActive { return }                    // the local liveness owns the text
+                    if zoom != .SENDING && zoom != .NO_DETECT {
+                        if zoom == .ZOOM_IN {
+                            feedbackText = FlowStrings.moveIdCloser
+                        } else if zoom == .ZOOM_OUT {
+                            feedbackText = FlowStrings.moveIdFurther
                         } else {
-
-                            if motion == .SENDING && zoom == .SENDING && brightnessEvents == .Good {
-                                feedbackText = FlowStrings.holdSteady
-                            }
-
-                            if motion == .NO_DETECT && zoom == .NO_DETECT {
-                                feedbackText = FlowStrings.presentId2
-                            } else if !isCentered {
-                                feedbackText = FlowStrings.centerYourId
-                            }
+                            feedbackText = ""
                         }
-                        
-                    
+                    } else if motion != .SENDING && motion != .NO_DETECT {
+                        feedbackText = FlowStrings.holdYourHand
+                    } else if brightnessEvents != .Good {
+                        if brightnessEvents == .TooDark {
+                            feedbackText = FlowStrings.increaseLighting
+                        } else if brightnessEvents == .TooBright {
+                            feedbackText = FlowStrings.reduceLighting
+                        } else {
+                            feedbackText = ""
+                        }
+                    } else {
+                        if motion == .SENDING && zoom == .SENDING && brightnessEvents == .Good {
+                            feedbackText = FlowStrings.holdSteady
+                        }
+                        if motion == .NO_DETECT && zoom == .NO_DETECT {
+                            feedbackText = FlowStrings.presentId2
+                        } else if !isCentered {
+                            feedbackText = FlowStrings.centerYourId
+                        }
+                    }
                 }
-                  
+            },
+            // the local card liveness: what the user should do now, and the tilt meter (0..100)
+            onLivenessInstruction: { instruction, progress in
+                DispatchQueue.main.async {
+                    livenessActive = instruction.livenessActive     // not after "keep holding" / "barcode read"
+                    feedbackText = FlowStrings.idLivenessText(instruction)
+                    tiltProgress = progress
+                    tiltProgressVisible = instruction.showsTiltMeter
+                }
             }
         )
         
@@ -397,20 +349,22 @@ public struct IDCardScanStep: View {
             } else {
                 Color.clear
                     .ignoresSafeArea()
-                
             }
+
             if screenEvent == .idle {
                 VStack {
                     Spacer()
                     
                     if !(assentifySdk?.isManual() ?? false) {
-                        Text(feedbackText)
-                            .foregroundColor(Color(BaseTheme.baseAccentColor))
-                            .font(.system(size: 15, weight: .light))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
+                        if !showHoldPopup {                         // the instructions start once the popup is closed
+                            LivenessFeedbackView(
+                                text: feedbackText,
+                                progress: tiltProgress,
+                                showProgress: tiltProgressVisible
+                            )
+                            .padding(.horizontal, 20)
                             .padding(.bottom, 40)
+                        }
                     } else {
                         BaseClickButton(
                             title: FlowStrings.takePhoto,
@@ -438,86 +392,40 @@ public struct IDCardScanStep: View {
                     .zIndex(999)
                     .allowsHitTesting(true)
                     .transition(.opacity)
+
             case .completed:
                 if(kycDocumentDetails
-                    .first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })!.hasQrCode){
+                    .first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })?.hasQrCode ?? false){
                     OnNormalCompleteScreen(imageUrl: self.imageUrl,
-                                           onNext: {
-                                            onNext()
-                                        },
-                                            onBack: {
-                                            onBack()
-                                          })
+                                           onNext: { onNext() },
+                                           onBack: { onBack() })
                 }else{
                     if showResultPage {
                         OnCompleteScreen(imageUrl: self.imageUrl,
-                                         onNext: {
-                                          onNext()
-                                      },
-                                          onBack: {
-                                          onBack()
-                                        })
+                                         onNext: { onNext() },
+                                         onBack: { onBack() })
                     } else {
                         OnNormalCompleteScreen(imageUrl: self.imageUrl,
-                                               onNext: {
-                                                onNext()
-                                            },
-                                                onBack: {
-                                                onBack()
-                                              })
+                                               onNext: { onNext() },
+                                               onBack: { onBack() })
                     }
                 }
                 
-                
             case .error , .retry :
-                OnErrorScreen(imageUrl: self.imageUrl ,onRetry: {
-                    DispatchQueue.main.async {
-                        screenEvent = .idle
-                        start = true
-                        commands.triggerRetry += 1
-                    }
-                },
-                              onBack: {
-                              onBack()
-                            })
+                OnErrorScreen(imageUrl: self.imageUrl, onRetry: { retryScan() }, onBack: { onBack() })
+
             case .wrongTemplate:
-                OnWrongTemplateScreen(imageUrl: self.imageUrl,expectedImageUrl: "",onRetry:  {
-                    DispatchQueue.main.async {
-                        screenEvent = .idle
-                        start = true
-                        commands.triggerRetry += 1
-                    }
-                },
-                onBack: {
-                onBack()
-              })
+                OnWrongTemplateScreen(imageUrl: self.imageUrl, expectedImageUrl: "", onRetry: { retryScan() }, onBack: { onBack() })
                 
             case .liveness:
-                OnLivenessScreen(imageUrl: self.imageUrl,onRetry:  {
-                    DispatchQueue.main.async {
-                        screenEvent = .idle
-                        start = true
-                        commands.triggerRetry += 1
-                    }
-                },
-                onBack: {
-                onBack()
-              })
+                OnLivenessScreen(imageUrl: self.imageUrl, image: self.livenessImage, onRetry: { retryScan() }, onBack: { onBack() })
+
             case .flip:
-                OnFlipCardScreen(expectedImageUrl: kycDocumentDetails.first(where: { $0.templateProcessingKeyInformation != classifiedTemplate })!.templateSpecimen,
-               onNext: {
-                        DispatchQueue.main.async {
-                            screenEvent = .idle
-                            start = true
-                            commands.triggerRetry += 1
-                        }
-                    },
-                onBack: {
-                onBack()
-              })
-                
-                
+                OnFlipCardScreen(expectedImageUrl: kycDocumentDetails.first(where: { $0.templateProcessingKeyInformation != classifiedTemplate })?.templateSpecimen ?? "",
+                                 onNext: { flipToBack() },
+                                 onBack: { onBack() })
             }
+
             if screenEvent == .idle || BaseTheme.stepperType == .normal{
                Color.clear
                     .topBarBackLogo(logoUrl : screenEvent == .idle || BaseTheme.stepperType == .normal ?  BaseTheme.baseLogo : "" ,noStepper: screenEvent == .idle || BaseTheme.stepperType == .normal  ?  true : false,) {
@@ -529,9 +437,21 @@ public struct IDCardScanStep: View {
                          onBack()
                      }
             }
+
+            // ---------- on top of everything: hold the card in your hand (auto scan only) ----------
+            if showHoldPopup && screenEvent == .idle && !(assentifySdk?.isManual() ?? false) {
+                HoldCardInHandPopup(
+                    title: FlowStrings.holdCardTitle,
+                    message: FlowStrings.holdCardMsg,
+                    buttonText: FlowStrings.continueButton,
+                    onContinue: { showHoldPopup = false }   // only closes the popup: the scan goes on as it is
+                )
+                .zIndex(1000)
+            }
         }
         .onAppear{ isNavigating = false}
         .animation(.easeInOut(duration: 0.2), value: start)
+        .animation(.easeInOut(duration: 0.2), value: showHoldPopup)
         .modifier(InterceptSystemBack(action: onBack)).onAppear {
             if templatesByCountry == nil {
                 loadTemplates()
@@ -607,8 +527,9 @@ struct IDScanUIKitView: UIViewControllerRepresentable {
             events.onWrongTemplate?(dataModel)
         }
         
-        func onLivenessUpdate(dataModel: RemoteProcessingModel) {
-            events.onLivenessUpdate?(dataModel)
+        /// The liveness failed: image nil from the server (its URL), the camera's image from the local liveness.
+        func onLivenessUpdate(dataModel: RemoteProcessingModel, image: UIImage?) {
+            events.onLivenessUpdate?(dataModel, image)
         }
         
         func onEnvironmentalConditionsChange(
@@ -618,6 +539,11 @@ struct IDScanUIKitView: UIViewControllerRepresentable {
             isCentered: Bool
         ) {
             events.onEnvironmental?(brightnessEvents, motion, zoom, isCentered)
+        }
+
+        /// The local card liveness: what the user should do now, and the tilt meter (0..100).
+        func onLivenessInstruction(instruction: IdLivenessInstruction, progress: Int) {
+            events.onLivenessInstruction?(instruction, progress)
         }
     }
     
@@ -647,12 +573,10 @@ struct IDScanUIKitView: UIViewControllerRepresentable {
                 lastRetryTrigger = commands.triggerRetry
                 retry()
             }
-            
             if commands.triggerCapture != lastCaptureTrigger {
                 lastCaptureTrigger = commands.triggerCapture
                 capture()
             }
-            
             if commands.triggerClose != lastCloseTrigger {
                 lastCloseTrigger = commands.triggerClose
                 close()
@@ -661,15 +585,16 @@ struct IDScanUIKitView: UIViewControllerRepresentable {
                 lastFlepTrigger = commands.triggerFlep
                 flep()
             }
-            
         }
         
+        /// The flip screen's button: the back (the classifier and the liveness start again).
         private func flep() {
             self.idVC?.changeTemplateId()
         }
         
-        
+        /// The retry buttons: this side starts again from Position (also the old and the manual capture).
         private func retry() {
+            idVC?.retryLiveness()
         }
         
         private func capture() {
@@ -730,5 +655,3 @@ struct IDScanUIKitView: UIViewControllerRepresentable {
         }
     }
 }
-
-

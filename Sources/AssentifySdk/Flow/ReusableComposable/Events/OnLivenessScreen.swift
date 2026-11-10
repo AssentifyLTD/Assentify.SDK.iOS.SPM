@@ -1,25 +1,30 @@
 import SwiftUI
 
+/// The liveness failed.
+///  - image:    the document as the phone's camera saw it (local liveness: suspected copy / inconclusive / stalled)
+///  - imageUrl: the server's image, shown when image is nil (server liveness failure)
 public struct OnLivenessScreen: View {
 
     let imageUrl: String
+    let image: UIImage?
     let onRetry: () -> Void
     let onBack: () -> Void
     let steps: [LocalStepModel] = LocalStepsObject.shared.get()
 
     public init(
         imageUrl: String,
+        image: UIImage? = nil,
         onRetry: @escaping () -> Void,
         onBack: @escaping () -> Void,
     ) {
         self.imageUrl = imageUrl
+        self.image = image
         self.onRetry = onRetry
         self.onBack = onBack
     }
 
     public var body: some View {
 
-        let accent = Color(BaseTheme.baseAccentColor)
         let text   = Color(BaseTheme.baseTextColor)
 
         BaseBackgroundContainer {
@@ -32,16 +37,26 @@ public struct OnLivenessScreen: View {
                     .padding(.top,
                              BaseTheme.stepperType == .normal ?
                              120 : 80)
-               
+
 
                 VStack(spacing: 0) {
 
                     Spacer().frame(height: 80)
 
                     ZStack {
-                        SecureImage(imageUrl: imageUrl)
-                            .frame(width: 300, height: 200)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        if let local = image {
+                            // the local liveness: the camera's image
+                            Image(uiImage: local)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 300, height: 200)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                        } else {
+                            // the server: its image URL
+                            SecureImage(imageUrl: imageUrl)
+                                .frame(width: 300, height: 200)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
 
                         SVGAssetIcon(
                             name: "ic_error",
@@ -77,7 +92,7 @@ public struct OnLivenessScreen: View {
                         enabled: true,
                         action: onRetry
                     )
-                    .padding(.horizontal, 30) 
+                    .padding(.horizontal, 30)
                     .padding(.bottom, 30)
                     .padding(.top, 24)
                 }

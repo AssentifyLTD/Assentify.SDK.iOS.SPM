@@ -1,0 +1,454 @@
+{
+  "policyVersion": "2026-10-22.10",
+  "packageVariant": "rc17+lb-passport-spread",
+  "config": {
+    "policyVersion": "2026-10-22.10",
+    "batteryLowBelow": 0.05,
+    "analysisLongEdge": 720,
+    "minQuadAreaFrac": 0.08,
+    "tiltOverflow": 0.15,
+    "frameMarginPx": 4,
+    "stableMs": 300,
+    "baselineHoldMs": 400,
+    "finalHoldMs": 400,
+    "lossMs": 1500,
+    "phaseTimeoutMs": 15000,
+    "maxAttempts": 3,
+    "maxRestarts": 8,
+    "edgeMargin": 0.02,
+    "hands": {
+      "flatDeg": 10,
+      "flatMs": 800,
+      "tableCard": true,
+      "turnDeg": 20,
+      "maxPauses": 1
+    },
+    "maxEarlyRestarts": 40,
+    "frontalMax": 0.16,
+    "shapeTol": 0.1,
+    "angleMax": 0.17,
+    "secondDocFrac": 0.25,
+    "samePlaceMax": 0.08,
+    "initTimeoutMs": 300000,
+    "initStallMs": 60000,
+    "loadSlowMs": 20000,
+    "stallMs": 6000,
+    "tiltHoldMs": 4000,
+    "stuckMs": 3000,
+    "wrongWayFrames": 4,
+    "hintAfterMs": 3000,
+    "repeatAfterMs": 6000,
+    "autoBackMs": 1800,
+    "turnMs": 2500,
+    "reviewMs": 10000,
+    "turnAfterReviewMs": 900,
+    "slowCheckMs": 8000,
+    "sendPhoto": {
+      "maxSide": 1920,
+      "quality": 0.9
+    },
+    "checkStepsMs": 8000,
+    "longerLineMs": 4500,
+    "verifyTimeoutMs": 45000,
+    "endOnTilt": true,
+    "sweeps": 1,
+    "back": {
+      "sweeps": 0,
+      "policy": "shadow",
+      "glareWaitMs": 3000
+    },
+    "tiltMin": 0.05,
+    "tiltNoiseK": 3,
+    "upDown": {
+      "tiltMin": 0.08,
+      "holdFrames": 6,
+      "pageDirection": "bottom"
+    },
+    "laminate": {
+      "minLitFrames": 3,
+      "minHues": 3,
+      "minPeak": 0.001,
+      "minFrames": 6,
+      "strongHues": 5,
+      "strongPeak": 0.003,
+      "passportStrong": true,
+      "passportHues": 4,
+      "policy": "enforce"
+    },
+    "otherPassport": {
+      "laminatePolicy": "shadow"
+    },
+    "civilExtract": {
+      "holdMs": 300,
+      "lightMs": 900,
+      "minFill": 0.18,
+      "steadyMs": 700,
+      "steadyMove": 0.02,
+      "buttonAfterMs": 10000,
+      "codeMs": 25000,
+      "codeEveryMs": 350,
+      "maxRestarts": 2
+    },
+    "overlay": {
+      "policy": "enforce",
+      "bar": 4.5,
+      "barSeveral": 3.5,
+      "waitMs": 1500
+    },
+    "backShown": {
+      "policy": "shadow",
+      "bar": 0.3,
+      "everyMs": 300,
+      "withinMs": 12000,
+      "hintAfterMs": 1500
+    },
+    "idBarcode": {
+      "everyMs": 250,
+      "waitMs": 8000
+    },
+    "drivingLicence": {
+      "laminatePolicy": "enforce",
+      "holdMs": 6000,
+      "tiltShare": 0.6
+    },
+    "spread": {
+      "cutMax": 0.05
+    },
+    "sweepFrames": 3,
+    "returnTol": 0.05,
+    "returnFrames": 2,
+    "jitterMax": 0.015,
+    "driftMax": 0.03,
+    "aspectJumpMax": 0.15,
+    "tiltAspectJumpMax": 0.35,
+    "tiltStepMin": 0.1,
+    "areaJumpMax": 1.6,
+    "sharpnessMin": 60,
+    "glareFracMax": 0.04,
+    "optical": {
+      "minFrames": 6,
+      "supportRatio": 2,
+      "staticRatio": 1.2,
+      "controlMax": 20,
+      "policy": "shadow"
+    },
+    "reflection": {
+      "flareMin": 0.0002,
+      "whiteoutMax": 0.3,
+      "chromaMin": 0.03,
+      "minLitFrames": 2,
+      "liftMin": 1.02,
+      "brightLift": 1.25,
+      "sunMax": 3,
+      "policy": "enforce"
+    },
+    "light": {
+      "frames": 5,
+      "settleMs": 300,
+      "maxMs": 2500,
+      "offSettleMs": 500,
+      "offMaxMs": 4000,
+      "barcodeMs": 3000
+    },
+    "emblem": {
+      "litMin": 7,
+      "jumpMin": 8,
+      "strongLit": 16,
+      "testTilt": 0.12,
+      "tiltTarget": 0.15,
+      "holdMs": 8000,
+      "minFrames": 2,
+      "extraMs": 3000,
+      "darkMax": 0.6,
+      "minTiltFrames": 3,
+      "tiltSide": 0.05,
+      "direction": "right",
+      "policy": "enforce"
+    },
+    "face": {
+      "strongChroma": 50,
+      "strongColourMax": 0.7,
+      "inset": 0.06,
+      "policy": "enforce"
+    },
+    "evidence": {
+      "maxFrames": 80,
+      "maxBytes": 20971520
+    },
+    "residencePermit": {
+      "laminatePolicy": "enforce",
+      "holdMs": 6000,
+      "tiltShare": 0.6,
+      "evidence": "licence trials"
+    }
+  },
+  "profiles": {
+    "lb_civil_id": {
+      "id": "lb_civil_id.cedar.v0",
+      "kind": "lb_civil_id",
+      "aspect": 1.585185185185185,
+      "feature": {
+        "kind": "cedar",
+        "roi": {
+          "x": 0.04,
+          "y": 0.11,
+          "w": 0.2,
+          "h": 0.29
+        },
+        "staticHue": [
+          50,
+          100
+        ],
+        "minSaturation": 40
+      },
+      "controls": [
+        {
+          "x": 0.42,
+          "y": 0.05,
+          "w": 0.3,
+          "h": 0.12
+        },
+        {
+          "x": 0.5,
+          "y": 0.72,
+          "w": 0.4,
+          "h": 0.18
+        },
+        {
+          "x": 0.36,
+          "y": 0.36,
+          "w": 0.22,
+          "h": 0.22
+        }
+      ],
+      "emblem": {
+        "cell": {
+          "x": 0.07,
+          "y": 0.15,
+          "w": 0.08,
+          "h": 0.14
+        },
+        "inner": {
+          "x": 0.03,
+          "y": 0.12,
+          "w": 0.15,
+          "h": 0.21
+        },
+        "outer": {
+          "x": 0.01,
+          "y": 0.08,
+          "w": 0.21,
+          "h": 0.3
+        }
+      },
+      "orient": {
+        "roi": {
+          "x": 0.52,
+          "y": 0.29,
+          "w": 0.34,
+          "h": 0.45
+        },
+        "hue": [
+          30,
+          95
+        ],
+        "minSaturation": 45
+      },
+      "minFill": 0.85
+    },
+    "lb_civil_id_back": {
+      "id": "lb_civil_id.back.v0",
+      "kind": "lb_civil_id_back",
+      "aspect": 1.585185185185185,
+      "feature": {
+        "kind": "none",
+        "roi": {
+          "x": 0.35,
+          "y": 0.3,
+          "w": 0.3,
+          "h": 0.3
+        }
+      },
+      "controls": [
+        {
+          "x": 0.1,
+          "y": 0.1,
+          "w": 0.25,
+          "h": 0.2
+        },
+        {
+          "x": 0.65,
+          "y": 0.1,
+          "w": 0.25,
+          "h": 0.2
+        },
+        {
+          "x": 0.1,
+          "y": 0.55,
+          "w": 0.8,
+          "h": 0.12
+        }
+      ]
+    },
+    "lb_passport": {
+      "id": "lb_passport.laminate.v0",
+      "kind": "lb_passport",
+      "aspect": 1.4204545454545454,
+      "feature": {
+        "kind": "laminate_hologram",
+        "roi": {
+          "x": 0.46,
+          "y": 0.2,
+          "w": 0.22,
+          "h": 0.44
+        }
+      },
+      "controls": [
+        {
+          "x": 0.3,
+          "y": 0.26,
+          "w": 0.13,
+          "h": 0.34
+        },
+        {
+          "x": 0.1,
+          "y": 0.82,
+          "w": 0.8,
+          "h": 0.12
+        },
+        {
+          "x": 0.72,
+          "y": 0.64,
+          "w": 0.2,
+          "h": 0.12
+        }
+      ],
+      "iridescent": true,
+      "page": true,
+      "spread": true
+    },
+    "other_passport": {
+      "id": "other_passport.laminate.v0",
+      "kind": "other_passport",
+      "aspect": 1.4204545454545454,
+      "feature": {
+        "kind": "none",
+        "roi": {
+          "x": 0.35,
+          "y": 0.3,
+          "w": 0.3,
+          "h": 0.3
+        }
+      },
+      "controls": [
+        {
+          "x": 0.3,
+          "y": 0.26,
+          "w": 0.13,
+          "h": 0.34
+        },
+        {
+          "x": 0.1,
+          "y": 0.82,
+          "w": 0.8,
+          "h": 0.12
+        },
+        {
+          "x": 0.72,
+          "y": 0.64,
+          "w": 0.2,
+          "h": 0.12
+        }
+      ],
+      "iridescent": true,
+      "page": true
+    },
+    "lb_driving_licence": {
+      "id": "lb_driving_licence.laminate.v0",
+      "kind": "lb_driving_licence",
+      "aspect": 1.585185185185185,
+      "feature": {
+        "kind": "none",
+        "roi": {
+          "x": 0.35,
+          "y": 0.3,
+          "w": 0.3,
+          "h": 0.3
+        }
+      },
+      "controls": [
+        {
+          "x": 0.1,
+          "y": 0.1,
+          "w": 0.25,
+          "h": 0.2
+        },
+        {
+          "x": 0.65,
+          "y": 0.1,
+          "w": 0.25,
+          "h": 0.2
+        },
+        {
+          "x": 0.1,
+          "y": 0.55,
+          "w": 0.8,
+          "h": 0.12
+        }
+      ],
+      "iridescent": true
+    },
+    "lb_civil_extract": {
+      "id": "lb_civil_extract.record.v0",
+      "kind": "lb_civil_extract",
+      "aspect": 1.3,
+      "feature": {
+        "kind": "none",
+        "roi": {
+          "x": 0.35,
+          "y": 0.3,
+          "w": 0.3,
+          "h": 0.3
+        }
+      },
+      "controls": [],
+      "sheet": true
+    },
+    "lb_residence_permit": {
+      "id": "lb_residence_permit.laminate.v0",
+      "kind": "lb_residence_permit",
+      "aspect": 1.585185185185185,
+      "feature": {
+        "kind": "none",
+        "roi": {
+          "x": 0.35,
+          "y": 0.3,
+          "w": 0.3,
+          "h": 0.3
+        }
+      },
+      "controls": [
+        {
+          "x": 0.1,
+          "y": 0.1,
+          "w": 0.25,
+          "h": 0.2
+        },
+        {
+          "x": 0.65,
+          "y": 0.1,
+          "w": 0.25,
+          "h": 0.2
+        },
+        {
+          "x": 0.1,
+          "y": 0.55,
+          "w": 0.8,
+          "h": 0.12
+        }
+      ],
+      "iridescent": true,
+      "evidence": "licence trials"
+    }
+  }
+}

@@ -396,4 +396,79 @@ public struct FlowStrings {
         }
         return "This slot already contains \(kind ?? "a") file(s). Remove them first if you want to upload a different file type here."
     }
+
+    // MARK: - Passport Liveness (same texts as Android FlowStrings.kt)
+
+    public static var livenessPlaceDocument: String { isArabic ? "ضع صفحة الصورة في جواز السفر داخل الإطار" : "Place the passport photo page inside the frame" }
+    public static var livenessKeepSteady: String { isArabic ? "أبقِه ثابتاً" : "Keep it steady" }
+    public static var livenessLiftBottom: String { isArabic ? "ارفع الحافة السفلية ببطء نحوك" : "Slowly lift the bottom edge toward you" }
+    public static var livenessMoveLittleMore: String { isArabic ? "قليلاً بعد. أبقِه هكذا للحظة" : "A bit more. Hold it there a moment" }
+    public static var livenessHoldThere: String { isArabic ? "أبقِه هنا. حافظ على الصفحة كاملة داخل الإطار" : "Hold it there. Keep the whole page in the frame" }
+    public static var livenessOtherSide: String { isArabic ? "ارفع الحافة السفلية وليس العلوية" : "Lift the bottom edge, not the top" }
+    public static var livenessHoldItUp: String { isArabic ? "أمسك جواز السفر بيدك" : "Hold the passport up in your hand" }
+    public static var livenessPlaceFlatAgain: String { isArabic ? "أعده مستوياً مرة أخرى" : "Place it flat again" }
+    public static var livenessKeepHolding: String { isArabic ? "استمر في الإمساك به. أوشكنا على الانتهاء" : "Keep holding it. We're almost done" }
+    public static var livenessHoldInHand: String { isArabic ? "أمسك جواز السفر بيدك وليس على الطاولة" : "Hold the passport in your hand, not on the table" }
+    public static var livenessPhoneTurned: String { isArabic ? "أبقِ الهاتف ثابتاً وقم بإمالة جواز السفر نفسه" : "Keep the phone still and tilt the passport itself" }
+    public static var livenessTooBright: String { isArabic ? "الإضاءة قوية جداً هنا. انتقل إلى الداخل أو إلى الظل" : "Too much light here. Move indoors or into the shade" }
+    public static var livenessTiltProgress: String { isArabic ? "تقدّم الإمالة" : "Tilt progress" }
+    public static var livenessDone: String { isArabic ? "تم" : "Done" }
+
+    // MARK: - ID Card Liveness (civil ID front / back, driving licence, residence permit)
+
+    public static var idLivenessPlaceCard: String { isArabic ? "ضع البطاقة داخل الإطار" : "Place the card inside the frame" }
+    public static var idLivenessKeepFlat: String { isArabic ? "أبقِ البطاقة مستوية مقابل الكاميرا" : "Hold the card flat, facing the camera" }
+    public static var idLivenessReduceGlare: String { isArabic ? "أمِل البطاقة قليلاً لتجنب الانعكاس" : "Tilt the card slightly to avoid the glare" }
+    public static var idLivenessLightOn: String { isArabic ? "أبقِها ثابتة. الضوء يعمل لبضع ثوانٍ" : "Keep it steady. The light is on for a few seconds" }
+    public static var idLivenessLiftRight: String { isArabic ? "ارفع الحافة اليمنى ببطء نحوك" : "Slowly lift the right edge toward you" }
+    public static var idLivenessLiftTop: String { isArabic ? "ارفع الحافة العلوية ببطء نحوك" : "Slowly lift the top edge toward you" }
+    public static var idLivenessLiftBottom: String { isArabic ? "ارفع الحافة السفلية ببطء نحوك" : "Slowly lift the bottom edge toward you" }
+    public static var idLivenessHoldThere: String { isArabic ? "أبقِها هنا. حافظ على البطاقة كاملة داخل الإطار" : "Hold it there. Keep the whole card in the frame" }
+    public static var idLivenessOtherEdge: String { isArabic ? "ارفع الحافة الأخرى" : "Lift the other edge" }
+    public static var idLivenessPickUp: String { isArabic ? "أمسك البطاقة بيدك" : "Hold the card up in your hand" }
+    public static var idLivenessHoldInHand: String { isArabic ? "أمسك البطاقة بيدك وليس على الطاولة" : "Hold the card in your hand, not on the table" }
+    public static var idLivenessPhoneTurned: String { isArabic ? "أبقِ الهاتف ثابتاً وقم بإمالة البطاقة نفسها" : "Keep the phone still and tilt the card itself" }
+    public static var idLivenessReadingBarcode: String { isArabic ? "جارٍ قراءة الباركود. أبقِ البطاقة داخل الإطار، قريبة وثابتة" : "Reading the barcode. Keep the card in the frame, close and steady" }
+    public static var idLivenessBarcodeRead: String { isArabic ? "تمت قراءة الباركود" : "Barcode read" }
+
+    
+    public static var holdCardTitle: String { isArabic ? "أمسك البطاقة بيدك" : "Hold the card in your hand" }
+    public static var holdCardMsg: String { isArabic ? "ارفعها عن الطاولة، ثم تابع." : "Pick it up off the table, then continue." }
+    public static var holdPassportTitle: String { isArabic ? "أمسك جواز السفر بيدك" : "Hold the passport in your hand" }
+    public static var holdPassportMsg: String { isArabic ? "ارفعه عن الطاولة، ثم تابع." : "Pick it up off the table, then continue." }
+    public static var continueButton: String { isArabic ? "متابعة" : "Continue" }
+    
+    // MARK: - Liveness instruction -> text (the step screens use these; same texts as Android)
+
+    /// The text for an ID card liveness instruction (IDCardScanActivity.onLivenessInstruction).
+    public static func idLivenessText(_ i: IdLivenessInstruction) -> String {
+        switch i {
+        // ---------- POSITION ----------
+        case .placeCard: return idLivenessPlaceCard
+        // ---------- FLAT HOLD ----------
+        case .keepSteady: return livenessKeepSteady
+        case .keepFlat: return idLivenessKeepFlat
+        case .adjustPosition: return idLivenessReduceGlare
+        // ---------- LIGHT ----------
+        case .doNotMove: return idLivenessLightOn
+        // ---------- TILT ----------
+        case .liftRight: return idLivenessLiftRight
+        case .liftTop: return idLivenessLiftTop
+        case .liftBottom: return idLivenessLiftBottom
+        case .aBitMore: return livenessMoveLittleMore
+        case .holdThere: return idLivenessHoldThere
+        case .otherEdge: return idLivenessOtherEdge
+        case .pickUp: return idLivenessPickUp
+        // ---------- DONE ----------
+        case .keepHolding: return livenessKeepHolding
+        // ---------- ID BACK: the barcode ----------
+        case .readingBarcode: return idLivenessReadingBarcode
+        case .barcodeRead: return idLivenessBarcodeRead
+        // ---------- PAUSES (the SDK continues by itself after a few seconds) ----------
+        case .holdInHand: return idLivenessHoldInHand
+        case .phoneTurned: return idLivenessPhoneTurned
+        case .tooBright: return livenessTooBright
+        @unknown default: return ""
+        }
+    }
 }
