@@ -174,7 +174,6 @@ public final class FlowEnvironmentalConditions {
     public let hideBlockLoader: Bool
     public let hideWrapUp: Bool
     public let localMrzScan: Bool
-    public let faceAcceptanceRate: Int
 
     public init(
         backgroundType: BackgroundType,          // required like
@@ -204,7 +203,6 @@ public final class FlowEnvironmentalConditions {
         hideBlockLoader: Bool = false,
         hideWrapUp: Bool = false,
         localMrzScan: Bool = false,
-        faceAcceptanceRate: Int = 50,
 
 
     ) {
@@ -237,7 +235,6 @@ public final class FlowEnvironmentalConditions {
         self.hideBlockLoader = hideBlockLoader
         self.hideWrapUp = hideWrapUp
         self.localMrzScan = localMrzScan
-        self.faceAcceptanceRate = faceAcceptanceRate
 
     }
 }

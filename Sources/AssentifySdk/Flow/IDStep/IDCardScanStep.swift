@@ -56,6 +56,9 @@ public struct IDCardScanStep: View {
     @State private var tiltProgressVisible: Bool = false
     @State private var livenessActive: Bool = false
 
+    // the civil extract: its QR code was read in THIS scan (ScanIDCard's QR mode), so the separate QR step is not needed
+    @State private var qrReadInScan: Bool = false
+
     // "Hold the card in your hand": shown on top of the camera when the scan opens, until Continue
     @State private var showHoldPopup: Bool = true
     
@@ -117,8 +120,9 @@ public struct IDCardScanStep: View {
             isNavigating = true
             commands.triggerClose += 1
             
-            if (FlowEnvironmentalConditionsObject.shared.get()!.enableQr && kycDocumentDetails
-                .first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })!.hasQrCode) {
+            if (!qrReadInScan && (assentifySdk?.isManual() ?? false)
+                && FlowEnvironmentalConditionsObject.shared.get()!.enableQr
+                && (kycDocumentDetails.first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })?.hasQrCode ?? false)) {
                 self.flowController.push(HowToCaptureQrScreen(flowController: self.flowController))
             } else {
                 flowController.makeCurrentStepDone(extractedInformation: extractedInformation,timeStarted: self.timeStarted)
@@ -138,6 +142,7 @@ public struct IDCardScanStep: View {
             tiltProgress = 0
             tiltProgressVisible = false
             livenessActive = false
+            qrReadInScan = false
             commands.triggerRetry += 1
         }
     }
@@ -152,6 +157,7 @@ public struct IDCardScanStep: View {
             tiltProgress = 0
             tiltProgressVisible = false
             livenessActive = false
+            qrReadInScan = false
             commands.triggerFlep += 1                               // ScanIDCard.changeTemplateId()
         }
     }
@@ -241,7 +247,7 @@ public struct IDCardScanStep: View {
                     
                     if(isFrontPage){
                         QrIDResponseModelObject.shared.set(model)
-                        imageUrl = model.iDExtractedModel!.imageUrl!
+                        imageUrl = model.iDExtractedModel?.imageUrl ?? imageUrl   // the QR answer may have none
                         if let outputProperties = model.iDExtractedModel?.outputProperties {
                             let faceKey = flowController.getFaceMatchInputImageKey()
                             for (key, value) in outputProperties {
@@ -329,6 +335,7 @@ public struct IDCardScanStep: View {
             onLivenessInstruction: { instruction, progress in
                 DispatchQueue.main.async {
                     livenessActive = instruction.livenessActive     // not after "keep holding" / "barcode read"
+                    if instruction == .scanQr { qrReadInScan = true } // the extract: its QR is read in this scan
                     feedbackText = FlowStrings.idLivenessText(instruction)
                     tiltProgress = progress
                     tiltProgressVisible = instruction.showsTiltMeter
@@ -394,8 +401,8 @@ public struct IDCardScanStep: View {
                     .transition(.opacity)
 
             case .completed:
-                if(kycDocumentDetails
-                    .first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })?.hasQrCode ?? false){
+                if(!qrReadInScan && (kycDocumentDetails
+                    .first(where: { $0.templateProcessingKeyInformation == classifiedTemplate })?.hasQrCode ?? false)){
                     OnNormalCompleteScreen(imageUrl: self.imageUrl,
                                            onNext: { onNext() },
                                            onBack: { onBack() })

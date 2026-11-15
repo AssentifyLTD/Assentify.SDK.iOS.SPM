@@ -65,9 +65,12 @@ AssentifySdk pulls in the following packages automatically via SPM:
 
 ## Versions
 
+***1.0.0-Beta.39***
+1. *Supporting Document*
+
 ***1.0.0-Beta.38***
 1. *Passport Liveness Improvements*
-1. *ID Liveness Improvements*
+2. *ID Liveness Improvements*
 
 
 ***1.0.0-Beta.37***

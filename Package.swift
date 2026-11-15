@@ -95,7 +95,8 @@ let package = Package(
                 .process("Resources/id-video-en.mp4"),
                 .process("Resources/passport-video-ar.mp4"),
                 .process("Resources/id-video-ar.mp4"),
-                .process("Resources/id_barcode_gif.gif")
+                .process("Resources/id_barcode_gif.gif"),
+                .process("Resources/qr_zoom_box.gif")
                 
             ]
         ),

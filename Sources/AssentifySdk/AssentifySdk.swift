@@ -165,7 +165,7 @@ public class AssentifySdk {
     }
  
     
-    public func startScanPassport(scanPassportDelegate:ScanPassportDelegate,language: String = Language.NON,stepId: Int? = nil)->ScanPassport?{
+    public func startScanPassport(scanPassportDelegate:ScanPassportDelegate,language: String = Language.NON,stepId: Int? = nil,enableSupportingDocument:Bool = false)->ScanPassport?{
         if(isKeyValid){
             let scanPassport = ScanPassport(
                 configModel:self.configModel,
@@ -176,7 +176,7 @@ public class AssentifySdk {
                 isManual: self.isManual()
                 
             )
-            scanPassport.setStepId(stepId)
+            scanPassport.setStepId(stepId,enableSupportingDocument)
             return scanPassport;
             
         }else{
@@ -245,7 +245,7 @@ public class AssentifySdk {
     }
     
     
-    public func startScanID(scanIDCardDelegate:ScanIDCardDelegate, templatesByCountry:TemplatesByCountry,language: String = Language.NON,stepId: Int? = nil)->ScanIDCard?{
+    public func startScanID(scanIDCardDelegate:ScanIDCardDelegate, templatesByCountry:TemplatesByCountry,language: String = Language.NON,stepId: Int? = nil,enableSupportingDocument:Bool = false)->ScanIDCard?{
         if(isKeyValid){
             scanID = ScanIDCard(
                 configModel:self.configModel,
@@ -257,7 +257,7 @@ public class AssentifySdk {
                 isManual: self.isManual()
                 
             )
-            scanID!.setStepId(stepId)
+            scanID!.setStepId(stepId,enableSupportingDocument)
             return scanID;
             
         }else{
@@ -702,5 +702,120 @@ public class AssentifySdk {
         InteractionObject.shared.set(self.configModel!.instanceHash);
         ConfigModelObject.shared.set(nil)
     }
+    
+    func getTemplatesForSupportingDoc(supportingDocumentAcceptedDocuments: [String]) -> TemplatesByCountry {
+        let acceptedIds = Set(supportingDocumentAcceptedDocuments)
+
+        let templatesForSupportingDoc = (self.templates ?? [])
+            .flatMap { $0.templates }
+            .filter { acceptedIds.contains(String($0.id)) }
+
+        return TemplatesByCountry(
+            id: -1,
+            name: "",
+            sourceCountryCode: "",
+            flag: "",
+            templates: templatesForSupportingDoc
+        )
+    }
+    
+    
+    public func startCompareFaces(
+           sourceImageUrl: String,
+           targetImageUrl: String,
+           onSuccess: @escaping (CompareFacesResponse) -> Void,
+           onError: @escaping (String) -> Void
+       ) {
+           guard let config = configModel else {
+               onError("SDK is not initialized")
+               return
+           }
+           guard let sourceHash = extractBlobHash(sourceImageUrl),
+                 let targetHash = extractBlobHash(targetImageUrl) else {
+               onError("Invalid image URL, hash not found")
+               return
+           }
+
+           compareFacesByHash(
+               headers: widgetsHeaders(from: config),
+               body: CompareFacesRequest(sourceImageHash: sourceHash, targetImageHash: targetHash)
+           ) { result in
+               DispatchQueue.main.async {
+                   switch result {
+                   case .success(let response):
+                       if let error = response.error {
+                           onError(error)
+                       } else {
+                           onSuccess(response)
+                       }
+                   case .failure(let error):
+                       onError(Self.message(for: error, operation: "Compare faces"))
+                   }
+               }
+           }
+       }
+
+    public func startIdentityMatch(
+           identityFields: [String],
+           primaryValues: [String: String?],
+           documentValues: [String: String?],
+           useCase: Int,
+           onSuccess: @escaping (IdentityMatchResponse) -> Void,
+           onError: @escaping (String) -> Void
+       ) {
+           guard let config = configModel else {
+               onError("SDK is not initialized")
+               return
+           }
+
+           let body = IdentityMatchRequest(
+               primary: buildIdentity(identityFields: identityFields, values: primaryValues),
+               document: buildIdentity(identityFields: identityFields, values: documentValues),
+               useCase: useCase
+           )
+
+           // Module-qualify if the method name shadows the free function: YourModule.identityMatch(...)
+           identityMatch(headers: widgetsHeaders(from: config), body: body) { result in
+               DispatchQueue.main.async {
+                   switch result {
+                   case .success(let response):
+                       onSuccess(response)
+                   case .failure(let error):
+                       onError(Self.message(for: error, operation: "Identity match"))
+                   }
+               }
+           }
+       }
+
+       // MARK: - Helpers
+
+       private func widgetsHeaders(from config: ConfigModel) -> WidgetsHeaders {
+           WidgetsHeaders(
+               blockIdentifier: config.blockIdentifier,
+               flowIdentifier: config.flowIdentifier,
+               flowInstanceId: config.flowInstanceId,
+               instanceHash: config.instanceHash,
+               instanceId: config.instanceId,
+               tenantIdentifier: config.tenantIdentifier
+           )
+       }
+
+       /// Same messages the Android callbacks produce.
+       private static func message(for error: Error, operation: String) -> String {
+           switch error {
+           case WidgetsApiError.http(let code): return "\(operation) failed (\(code))"
+           case WidgetsApiError.emptyBody:      return "Empty \(operation.lowercased()) response"
+           default:                             return error.localizedDescription
+           }
+       }
+
+       private func extractBlobHash(_ blobUrl: String) -> String? {
+           let path = blobUrl.components(separatedBy: "?").first ?? blobUrl
+           let segments = path.components(separatedBy: "/")
+           guard let index = segments.firstIndex(of: "Document"),
+                 index + 1 < segments.count else { return nil }
+           let hash = segments[index + 1]
+           return hash.trimmingCharacters(in: .whitespaces).isEmpty ? nil : hash
+       }
     
 }

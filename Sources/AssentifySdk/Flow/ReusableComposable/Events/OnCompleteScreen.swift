@@ -68,7 +68,10 @@ public struct OnCompleteScreen: View {
         ("OnBoardMe_IdentificationDocumentCapture_ID_MaritalStatus", FlowStrings.labelMaritalStatus),
         ("OnBoardMe_IdentificationDocumentCapture_ID_PlaceOfResidence", FlowStrings.labelPlaceOfResidence),
         ("OnBoardMe_IdentificationDocumentCapture_ID_Province", FlowStrings.labelProvince),
-        ("OnBoardMe_IdentificationDocumentCapture_ID_Governorate", FlowStrings.labelGovernorate)
+        ("OnBoardMe_IdentificationDocumentCapture_ID_Governorate", FlowStrings.labelGovernorate),
+        ("OnBoardMe_IdentificationDocumentCapture_ID_MothersNameAr", FlowStrings.fieldMotherNameAr),
+        ("OnBoardMe_IdentificationDocumentCapture_ID_PlaceOfBirthAr", FlowStrings.fieldPlaceOfBirthAr),
+        ("OnBoardMe_IdentificationDocumentCapture_ID_FathersNameAr", FlowStrings.fieldFatherNameAr)
     ]
 
     // MARK: - Helpers

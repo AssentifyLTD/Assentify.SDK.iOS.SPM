@@ -510,4 +510,27 @@ public final class IsBackObject {
     public func clear() {
         isBack = nil
     }
+    
+   
+}
+
+
+public final class FaceModelObject {
+    
+    public static let shared = FaceModelObject()
+    private init() {}
+    
+    private var faceResponseModel:FaceResponseModel?
+    
+    public func set(_ faceResponseModel: FaceResponseModel) {
+        self.faceResponseModel = faceResponseModel
+    }
+    
+    public func get() -> FaceResponseModel? {
+        return faceResponseModel
+    }
+    
+    public func clear() {
+        faceResponseModel =  nil
+    }
 }
