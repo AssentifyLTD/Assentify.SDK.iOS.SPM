@@ -312,3 +312,121 @@ func transformData(apiKey: String, language: String, request: TransformationMode
     task.resume()
 }
 
+
+
+enum WidgetsApiError: LocalizedError {
+    case invalidURL
+    case invalidResponse
+    case http(Int)
+    case emptyBody
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:        return "Invalid URL"
+        case .invalidResponse:   return "Invalid response"
+        case .http(let code):    return "HTTP Error (\(code))"
+        case .emptyBody:         return "No data"
+        }
+    }
+}
+
+struct WidgetsHeaders {
+    let blockIdentifier: String
+    let flowIdentifier: String
+    let flowInstanceId: String
+    let instanceHash: String
+    let instanceId: String
+    let tenantIdentifier: String
+}
+
+func compareFacesByHash(
+    headers: WidgetsHeaders,
+    body: CompareFacesRequest,
+    completion: @escaping (BaseResult<CompareFacesResponse, Error>) -> Void
+) {
+    // TODO: exact path from @POST on RemoteWidgetsService.compareFacesByHash
+    postWidgets(path: "v3/api/IdentificationDocument/CompareFaces", headers: headers, body: body, completion: completion)
+}
+
+func identityMatch(
+    headers: WidgetsHeaders,
+    body: IdentityMatchRequest,
+    completion: @escaping (BaseResult<IdentityMatchResponse, Error>) -> Void
+) {
+    // TODO: exact path from @POST on RemoteWidgetsService.identityMatch
+    postWidgets(path: "api/IdentificationDocument/IdentityMatch", headers: headers, body: body, completion: completion)
+}
+
+private func postWidgets<Body: Encodable, Response: Decodable>(
+    path: String,
+    headers: WidgetsHeaders,
+    body: Body,
+    completion: @escaping (BaseResult<Response, Error>) -> Void
+) {
+    // TODO: use the base URL behind RemoteClient.remoteWidgetsService on Android
+    guard let url = URL(string: BaseUrls.signalRHub + path) else {
+        completion(.failure(WidgetsApiError.invalidURL))
+        return
+    }
+
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json",       forHTTPHeaderField: "Content-Type")
+    request.setValue(headers.blockIdentifier,  forHTTPHeaderField: "x-block-identifier")
+    request.setValue(headers.flowIdentifier,   forHTTPHeaderField: "x-flow-identifier")
+    request.setValue(headers.flowInstanceId,   forHTTPHeaderField: "x-flow-instance-id")
+    request.setValue(headers.instanceHash,     forHTTPHeaderField: "x-instance-hash")
+    request.setValue(headers.instanceId,       forHTTPHeaderField: "x-instance-id")
+    request.setValue(headers.tenantIdentifier, forHTTPHeaderField: "x-tenant-identifier")
+
+    do {
+        request.httpBody = try JSONEncoder().encode(body)
+    } catch {
+        completion(.failure(error))
+        return
+    }
+
+    
+
+    URLSession.shared.dataTask(with: request) { data, response, error in
+       
+
+        if let error = error {
+            completion(.failure(error))
+            return
+        }
+        guard let httpResponse = response as? HTTPURLResponse else {
+            completion(.failure(WidgetsApiError.invalidResponse))
+            return
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            completion(.failure(WidgetsApiError.http(httpResponse.statusCode)))
+            return
+        }
+        guard let data = data, !data.isEmpty else {
+            completion(.failure(WidgetsApiError.emptyBody))
+            return
+        }
+        do {
+            completion(.success(try JSONDecoder().decode(Response.self, from: data)))
+        } catch {
+            #if DEBUG
+            print("❌ [Widgets] Decoding \(Response.self) failed: \(error)")
+            #endif
+            completion(.failure(error))
+        }
+    }.resume()
+}
+
+/// Pretty-prints JSON data; falls back to a raw UTF-8 string if it isn't valid JSON.
+private func prettyJSON(_ data: Data?) -> String {
+    guard let data = data, !data.isEmpty else { return "<empty>" }
+    if let object = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]),
+       let pretty = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys]),
+       let string = String(data: pretty, encoding: .utf8) {
+        return string
+    }
+    return String(data: data, encoding: .utf8) ?? "<\(data.count) bytes, non-UTF8>"
+}
+
+

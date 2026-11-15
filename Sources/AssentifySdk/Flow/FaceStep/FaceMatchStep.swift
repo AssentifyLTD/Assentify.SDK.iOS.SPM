@@ -51,6 +51,8 @@ public struct FaceMatchStep: View {
     private var assentifySdk = AssentifySdkObject.shared.get()
     private let flowController: FlowController
 
+    /// Read once here: after makeCurrentStepDone() the current step is the next one.
+    private let faceSettings: FaceStepSettings
     
     /// required by your SDK signature
     private let secondImage: String
@@ -61,6 +63,7 @@ public struct FaceMatchStep: View {
     ) {
         self.flowController = flowController
         self.secondImage = secondImage
+        self.faceSettings = FaceStepSettings(flowController: flowController)
         /** Track Progress **/
         let currentStep = flowController.getCurrentStep()
         flowController.trackProgress(
@@ -78,50 +81,25 @@ public struct FaceMatchStep: View {
         flowController.pop()
     }
 
-    private func onNext() {
-        if (!isNavigating) {
-            isNavigating = true
-            //        DispatchQueue.main.async { screenEvent = .idle }
-            commands.triggerClose += 1
-            guard
-                let extractedModel = dataModel!.faceExtractedModel,
-                let rawOutputProps = extractedModel.outputProperties
-            else {
-                return
-            }
-            
-            var outputProps: [String: String] = rawOutputProps.mapValues {
-                String(describing: $0)
-            }
-            
-            IDImageObject.shared.clear()
-            
-            if let percentageMatch = extractedModel.percentageMatch,
-               percentageMatch <= 50 {
-                
-                if let skippedKey = outputProps.keys.first(where: {
-                    $0.contains("OnBoardMe_FaceImageAcquisition_IsSkippedStatus")
-                }) {
-                    outputProps[skippedKey] = "true"
-                }
-                
-            }
-            
-            if let key = outputProps.keys.first(where: {
-                $0.contains("OnBoardMe_FaceImageAcquisition_FaceAuthenticity")
-            }) {
-                if let value = outputProps[key] {
-                    if value == "0" {
-                        outputProps[key] = "false"
-                    } else if value == "1" {
-                        outputProps[key] = "true"
-                    }
-                }
-            }
-            
-            flowController.makeCurrentStepDone(extractedInformation: outputProps,timeStarted: self.timeStarted)
-            flowController.naveToNextStep()
-        }
+    /// Next / Skip on the result screen (Kotlin: onNext(isSkip)).
+    private func onNext(isSkip: Bool) {
+        guard !isNavigating, let model = dataModel else { return }
+        isNavigating = true
+        commands.triggerClose += 1
+        IDImageObject.shared.clear()
+
+        let outputProps = SupportingDocChecks.faceOutputProperties(model: model, isSkip: isSkip)
+        flowController.makeCurrentStepDone(extractedInformation: outputProps, timeStarted: self.timeStarted)
+        flowController.naveToNextStep()
+    }
+
+    /// "Provide Supporting ID": keep the face result and open the document picker
+    /// (Kotlin: FaceModelObject.setFaceModelObject + SupportingDocComposeActivity.start).
+    private func onIDChange() {
+        guard let model = dataModel else { return }
+        FaceModelObject.shared.set(model)
+        commands.triggerClose += 1
+        flowController.push(SupportingDocScreen(flowController: flowController))
     }
 
     public var body: some View {
@@ -378,18 +356,13 @@ public struct FaceMatchStep: View {
                     .transition(.opacity)
 
             case .completed:
-                // Use your own success screen here (example)
                 FaceResultScreen(
+                    settings: faceSettings,
                     faceModel: dataModel ?? FaceResponseModel(),
-                    onNext: onNext,
-                    onRetry: {
-                        onBack()
-                    },
-                    onIDChange: {
-                        flowController.faceIDChange();
-                        flowController.backClick()
-                    },
-                    onBack: {onBack()}
+                    onNext: { isSkip in onNext(isSkip: isSkip) },
+                    onRetry: { onBack() },
+                    onIDChange: { onIDChange() },
+                    onBack: { onBack() }
                 )
 
             case .error, .retry, .liveness:

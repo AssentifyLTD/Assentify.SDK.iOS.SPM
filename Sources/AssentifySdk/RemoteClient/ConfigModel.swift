@@ -96,6 +96,19 @@ public struct Customization: Codable {
     public let questions: [QuestionModel]?
 
     
+    // Face match / supporting document
+    public let faceMatchPassThreshold: Int?
+    public let belowThresholdFlagAndPass: Bool?
+    public let supportingDocumentEnabled: Bool?
+    public let supportingDocumentFrom: Int?
+    public let supportingDocumentAcceptedDocuments: [String]?
+    public let identityFields: [String]?
+    public let aiAdjudicatorEnabled: Bool?
+    public let supportingDocumentAllowSkip: Bool?
+
+    // Later
+    public let hardStopEnabled: Bool?
+    public let hardStopFields: [String]?
 }
 
 public struct Branch: Codable {

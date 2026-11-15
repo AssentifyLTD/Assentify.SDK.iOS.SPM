@@ -135,10 +135,7 @@ public struct BaseTheme {
           }
       }
     
-    public static var faceAcceptanceRate: Int {
-        env.faceAcceptanceRate
-    }
-    
+   
     
     
 

@@ -3,6 +3,7 @@ import Foundation
 /// What the user should do now during the local liveness of a CARD (Lebanese civil ID front / back, driving licence,
 /// residence permit), sent with the tilt meter (0..100) through ScanIDCardDelegate.onLivenessInstruction(instruction:progress:).
 /// The three pause items are shown for a few seconds; the SDK continues by itself. Port of IdLivenessInstruction.kt.
+/// Also the civil extract's QR step (scanQr): no liveness for the extract, only its QR code is read.
 @objc public enum IdLivenessInstruction: Int {
     case placeCard          // position: show the card in the frame
     case keepSteady         // baseline: hold still
@@ -25,15 +26,19 @@ import Foundation
     case phoneTurned        // the phone turned in the tilt: move the card, not the phone
     case tooBright          // sun: too much light here
 
+    // ---- civil extract (added last: the raw values above stay the same) ----
+    case scanQr             // the extract was recognised: move closer to its QR code (the QR drawing is shown)
+
     /// The tilt meter is shown under the instruction for these (it shows 100% at the end); hidden otherwise.
     public var showsTiltMeter: Bool {
         switch self {
         case .liftRight, .liftTop, .liftBottom, .aBitMore, .holdThere, .otherEdge, .pickUp, .keepHolding: return true
-        default: return false
+        default: return false                               // scanQr included: no meter while the QR is looked for
         }
     }
 
     /// The liveness owns the instruction text while it runs (not once the photo is being sent / the barcode is read).
+    /// scanQr owns it too, so the old "present your ID" messages don't cover the QR instruction.
     public var livenessActive: Bool {
         self != .keepHolding && self != .barcodeRead
     }

@@ -778,6 +778,66 @@ class Guide{
         return containerView
     }
     
+    /// The QR box's size: a square, this share of the screen's width (the handover's code box is about 0.55).
+    private static let QR_BOX_WIDTH_FRACTION: CGFloat = 0.6
+
+    func showQrGifLayout(view: UIView) throws -> UIView {
+        let name = "qr_zoom_box"
+
+        func imageView(_ image: UIImage) -> UIImageView {
+            let iv = UIImageView(image: image)
+            iv.contentMode = .scaleAspectFit       // fits inside the square, never stretched
+            iv.backgroundColor = .clear
+            iv.isOpaque = false
+            return iv
+        }
+
+        let content: UIView
+        if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
+            content = imageView(gif)
+        } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
+                  let svg = SVGKImage(contentsOfFile: path),
+                  let sv = SVGKFastImageView(svgkImage: svg) {                            // .svg
+            sv.contentMode = .scaleAspectFit
+            sv.backgroundColor = .clear
+            sv.isOpaque = false
+            content = sv
+        } else if let path = Bundle.module.path(forResource: name, ofType: "png")
+                    ?? Bundle.module.path(forResource: name, ofType: "jpg"),
+                  let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
+            content = imageView(img)
+        } else {
+            throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+        }
+
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.backgroundColor = .clear
+        containerView.isOpaque = false
+        containerView.isUserInteractionEnabled = false   // full-screen overlay must not block the back button
+
+        content.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(content)
+        view.addSubview(containerView)
+
+        NSLayoutConstraint.activate([
+            // the container: full screen, same as the card guide
+            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            containerView.topAnchor.constraint(equalTo: view.topAnchor),
+            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            // the box: a square, a fixed share of the screen's width, centred
+            content.widthAnchor.constraint(equalTo: containerView.widthAnchor,
+                                           multiplier: Guide.QR_BOX_WIDTH_FRACTION),
+            content.heightAnchor.constraint(equalTo: content.widthAnchor),          // square: height = width
+            content.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            content.centerYAnchor.constraint(equalTo: containerView.centerYAnchor)
+        ])
+
+        return containerView
+    }
+    
     
 }
 

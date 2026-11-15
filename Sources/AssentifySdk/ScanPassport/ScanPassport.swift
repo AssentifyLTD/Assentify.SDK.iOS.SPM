@@ -217,38 +217,47 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
     }
     
     
-    func setStepId(_ stepId: Int?) {
-        self.stepId = stepId
-        if self.stepId == nil {
-            let steps = self.configModel?.stepDefinitions.filter { $0.stepDefinition == "IdentificationDocumentCapture" }
+    func setStepId(_ stepId: Int?,_ enableSupportingDocument:Bool ) {
+        if(enableSupportingDocument){
+            self.stepId = nil
+            performLivenessDocument = true
+            processMrz = true
+            storeCapturedDocument = true
+            saveCapturedVideoID = true
+        }else{
+            self.stepId = stepId
+            if self.stepId == nil {
+                let steps = self.configModel?.stepDefinitions.filter { $0.stepDefinition == "IdentificationDocumentCapture" }
+                
+                if steps?.count == 1 {
+                    if let step = steps?.first {
+                        self.stepId = step.stepId
+                    }
+                } else {
+                    if self.stepId == nil {
+                        fatalError("Step ID is required because multiple 'Identification Document Capture' steps are present.")
+                    }
+                }
+            }
+            for item in self.configModel!.stepDefinitions {
+                if let stepIdInt = self.stepId, stepIdInt == item.stepId {
+                    if performLivenessDocument == nil {
+                        performLivenessDocument = item.customization.documentLiveness
+                    }
+                    if processMrz == nil {
+                        processMrz = item.customization.processMrz
+                    }
+                    if storeCapturedDocument == nil {
+                        storeCapturedDocument = item.customization.storeCapturedDocument
+                    }
+                    if saveCapturedVideoID == nil {
+                        saveCapturedVideoID = item.customization.saveCapturedVideo
+                    }
+                }
+            }
             
-            if steps?.count == 1 {
-                if let step = steps?.first {
-                    self.stepId = step.stepId
-                }
-            } else {
-                if self.stepId == nil {
-                    fatalError("Step ID is required because multiple 'Identification Document Capture' steps are present.")
-                }
-            }
         }
-        for item in self.configModel!.stepDefinitions {
-            if let stepIdInt = self.stepId, stepIdInt == item.stepId {
-                if performLivenessDocument == nil {
-                    performLivenessDocument = item.customization.documentLiveness
-                }
-                if processMrz == nil {
-                    processMrz = item.customization.processMrz
-                }
-                if storeCapturedDocument == nil {
-                    storeCapturedDocument = item.customization.storeCapturedDocument
-                }
-                if saveCapturedVideoID == nil {
-                    saveCapturedVideoID = item.customization.saveCapturedVideo
-                }
-            }
-        }
-        
+       
     }
     
     
@@ -486,7 +495,7 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
         remoteProcessing?.starProcessingIDs(
             url: BaseUrls.signalRHub + HubConnectionFunctions.etHubConnectionFunction(blockType:BlockType.READ_PASSPORT),
             image: dataImage,
-            stepIdString: String(self.stepId!),
+            stepIdString: self.stepId.map { String($0) } ?? "",
             appConfiguration:self.configModel!,
             connectionId: "ConnectionId",
             clipsPath: "ClipsPath",

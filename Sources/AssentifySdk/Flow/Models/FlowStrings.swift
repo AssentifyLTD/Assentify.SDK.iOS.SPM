@@ -438,7 +438,21 @@ public struct FlowStrings {
     public static var holdPassportMsg: String { isArabic ? "ارفعه عن الطاولة، ثم تابع." : "Pick it up off the table, then continue." }
     public static var continueButton: String { isArabic ? "متابعة" : "Continue" }
     
-    // MARK: - Liveness instruction -> text (the step screens use these; same texts as Android)
+    static var idLivenessScanQr: String {
+        isArabic ? "اقترب من رمز QR" : "Move closer to the QR code"
+    }
+    
+    public static var supportingDocumentTitle: String { isArabic ? "مطلوب مستند إضافي" : "Additional Document Required" }
+    public static var supportingDocumentTMsg: String { isArabic ? "لم نتمكن من تأكيد تطابق الوجه. يرجى تقديم مستند هوية آخر لمتابعة عملية التحقق." : "We couldn't confirm your face match. Please provide another identity document to continue your verification." }
+
+    public static var supportingDocPassedMsg: String { isArabic ? "تم التحقق من المستند الداعم بنجاح. يمكنك المتابعة." : "Your supporting document has been verified successfully. You can continue." }
+    public static var supportingDocFaceNoMatchMsg: String { isArabic ? "الوجه في المستند لا يطابق صورتك الشخصية. يرجى المحاولة مرة أخرى بمستند أوضح." : "The face on the document doesn't match your selfie. Please try again with a clearer document." }
+    public static var supportingDocIdentityMismatchMsg: String { isArabic ? "البيانات في هذا المستند لا تطابق هويتك الأصلية. يرجى استخدام مستند يخصك." : "The details on this document don't match your original ID. Please use a document that belongs to you." }
+    public static var supportingDocBothFailedMsg: String { isArabic ? "لم نتمكن من التحقق من هذا المستند. الوجه والبيانات لا تطابق هويتك الأصلية." : "We couldn't verify this document. The face and the details don't match your original ID." }
+
+    public static var fieldMotherNameAr: String { isArabic ? "اسم الأم (بالعربية)" : "Mother's Name (Arabic)" }
+    public static var fieldPlaceOfBirthAr: String { isArabic ? "مكان الولادة (بالعربية)" : "Place of Birth (Arabic)" }
+    public static var fieldFatherNameAr: String { isArabic ? "اسم الأب (بالعربية)" : "Father's Name (Arabic)" }
 
     /// The text for an ID card liveness instruction (IDCardScanActivity.onLivenessInstruction).
     public static func idLivenessText(_ i: IdLivenessInstruction) -> String {
@@ -468,6 +482,7 @@ public struct FlowStrings {
         case .holdInHand: return idLivenessHoldInHand
         case .phoneTurned: return idLivenessPhoneTurned
         case .tooBright: return livenessTooBright
+        case .scanQr: return idLivenessScanQr
         @unknown default: return ""
         }
     }

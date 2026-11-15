@@ -4,6 +4,7 @@ import AVFoundation
 import Accelerate
 import CoreImage
 import CoreMotion
+import Vision
 
 public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessingDelegate ,LanguageTransformationDelegate{
     
@@ -58,7 +59,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
     // Local card liveness: fields (the section itself is at the bottom of the class)
     // =============================================================================================
 
-    private static let DEBUG_LOGS = false                            // TEMP: set false for release
+    private static let DEBUG_LOGS = false                           // TEMP: set false for release
     private static let FINDER_MODEL = "finder_fp32"                 // the same finder as the passport
 
     // ---- which card (classification.tflite), decided before the liveness of each side ----
@@ -78,6 +79,20 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
     private static let CLASSIFY_MIN_CONF: Float = 0.20
     private static let CLASSIFY_BACK_MIN_CONF: Float = 0.50         // safeguard for "back"; 0 to turn it off
     private static let CLASSIFY_MAX_MS = 6000
+
+    // ---- the civil extract (lebanese-civil-extract / -old): no card liveness, its QR code is read and sent ----
+    // (was ScanQr). The classifier sees the sheet -> the QR drawing + "move closer to the QR code" -> the first QR read
+    // is sent (starQrProcessing) with the WHOLE sheet's photo (the frame the classifier recognised).
+    private static let KIND_CIVIL_EXTRACT = "lb_civil_extract"
+    private static let CLASSIFY_QR_MIN_CONF: Float = 0.50          // the extract, its outline found by the finder
+    private static let CLASSIFY_QR_NO_CARD_CONF: Float = 0.70      // the extract without an outline (a sheet of paper)
+    private static let CLASSIFY_NO_CARD_EVERY_MS = 300              // no outline in view: classify at most this often
+    private var lastNoCardClassifyAt = 0
+    private var qrMode = false                                      // this side is the civil extract: read its QR
+    private var qrLayoutShown = false                               // the QR drawing is shown: the guide is removed
+    private var qrLayoutView: UIView?                               // main thread: the QR drawing on screen, or nil
+    private var sheetPhoto: Data?                                   // the WHOLE extract, from the frame the classifier
+                                                                    // recognised (before the person moves in on the QR)
 
     // ---- finder ----
     private var finder: Finder?
@@ -252,38 +267,47 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         fatalError("init(coder:) has not been implemented")
     }
     
-    func setStepId(_ stepId: Int?) {
-        self.stepId = stepId
-        if self.stepId == nil {
-            let steps = self.configModel?.stepDefinitions.filter { $0.stepDefinition == "IdentificationDocumentCapture" }
+    func setStepId(_ stepId: Int?,_ enableSupportingDocument:Bool ) {
+        if(enableSupportingDocument){
+            self.stepId = nil
+            performLivenessDocument = true
+            processMrz = true
+            storeCapturedDocument = true
+            saveCapturedVideoID = true
+        }else{
+            self.stepId = stepId
+            if self.stepId == nil {
+                let steps = self.configModel?.stepDefinitions.filter { $0.stepDefinition == "IdentificationDocumentCapture" }
 
-            if steps?.count == 1 {
-                if let step = steps?.first {
-                    self.stepId = step.stepId
+                if steps?.count == 1 {
+                    if let step = steps?.first {
+                        self.stepId = step.stepId
+                    }
+                } else {
+                    if self.stepId == nil {
+                        fatalError("Step ID is required because multiple 'Identification Document Capture' steps are present.")
+                    }
                 }
-            } else {
-                if self.stepId == nil {
-                    fatalError("Step ID is required because multiple 'Identification Document Capture' steps are present.")
+            }
+            
+            for item in self.configModel!.stepDefinitions {
+                if let stepIdInt = self.stepId, stepIdInt == item.stepId {
+                    if performLivenessDocument == nil {
+                       performLivenessDocument = item.customization.documentLiveness
+                    }
+                    if processMrz == nil {
+                        processMrz = item.customization.processMrz
+                    }
+                    if storeCapturedDocument == nil {
+                        storeCapturedDocument = item.customization.storeCapturedDocument
+                    }
+                    if saveCapturedVideoID == nil {
+                        saveCapturedVideoID = item.customization.saveCapturedVideo
+                    }
                 }
             }
         }
-        
-        for item in self.configModel!.stepDefinitions {
-            if let stepIdInt = self.stepId, stepIdInt == item.stepId {
-                if performLivenessDocument == nil {
-                    performLivenessDocument = item.customization.documentLiveness
-                }
-                if processMrz == nil {
-                    processMrz = item.customization.processMrz
-                }
-                if storeCapturedDocument == nil {
-                    storeCapturedDocument = item.customization.storeCapturedDocument
-                }
-                if saveCapturedVideoID == nil {
-                    saveCapturedVideoID = item.customization.saveCapturedVideo
-                }
-            }
-        }
+       
     }
     
     public override func viewDidLoad() {
@@ -412,6 +436,14 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
                 showGuide(color: environmentalConditions!.HoldHandColor, notTransmitting: start, inTilt: false)
                 return
             }
+        } else if !localAllowed && start && !qrMode {
+            // document liveness off: no card liveness, but the civil extract is still recognised and its QR read.
+            // Looked for now and then while the old capture runs as before (nothing is held back for it).
+            lookForExtract(pixelBuffer)
+        }
+        if qrMode {                                                 // the civil extract: read its QR code
+            processQr(pixelBuffer)
+            return
         }
         let livenessOn = localAllowed && livenessKind != nil && ensureConfig()
         if !livenessOn {                                            // the capture as before
@@ -541,7 +573,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         remoteProcessing?.starProcessingIDs(
             url: BaseUrls.signalRHub + HubConnectionFunctions.etHubConnectionFunction(blockType:BlockType.ID_CARD),
             image: dataImage,
-            stepIdString: String(self.stepId!),
+            stepIdString: self.stepId.map { String($0) } ?? "",
             appConfiguration:self.configModel!,
             connectionId: "ConnectionId",
             clipsPath: "ClipsPath",
@@ -847,6 +879,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         stallTimer = nil
         barcodeToken += 1
         hideBarcodeLayout()
+        hideQrLayout()
         self.previewView.stopSession();
         self.cameraFeedManager.stopSession();
     }
@@ -922,20 +955,20 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         guard let upright = CardLivenessVision.analysisFrame(pb, longEdge: ANALYSIS_LONG_EDGE, rotateClockwise: landscape),
               let finder = finder else { return }
         let w = Double(upright.width), h = Double(upright.height)
-        guard let fr = try? finder.detect(upright, head: .card), fr.found, let c = fr.corners,
-              Geometry.isValidQuad(c, w: w, h: h, frameMarginPx: FRAME_MARGIN_PX, minQuadAreaFrac: MIN_QUAD_AREA_FRAC) else {
-            return                                                  // no card in view: nothing to classify yet
+        var card = false
+        if let fr = try? finder.detect(upright, head: .card), fr.found, let c = fr.corners,
+           Geometry.isValidQuad(c, w: w, h: h, frameMarginPx: FRAME_MARGIN_PX, minQuadAreaFrac: MIN_QUAD_AREA_FRAC) {
+            card = true
         }
         let now = nowMs()
-        if classifyStart == 0 { classifyStart = now }
-        if docClassifier == nil && !classifierFailed {
-            do {
-                docClassifier = try DocumentClassifier()
-            } catch {
-                classifierFailed = true
-                print("IdLiveness: document classifier could not be loaded: \(error)")
-            }
+        if !card {
+            // no card outline: the card kinds wait for one, but the civil extract (a sheet of paper, which the card
+            // finder may not outline) can still be recognised: classify now and then, and accept ONLY the extract
+            if now - lastNoCardClassifyAt < ScanIDCard.CLASSIFY_NO_CARD_EVERY_MS { return }
+            lastNoCardClassifyAt = now
         }
+        if card && classifyStart == 0 { classifyStart = now }
+        loadClassifier()
         guard let classifier = docClassifier else {
             applyKind(nil, "classifier unavailable")
             return
@@ -943,6 +976,15 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         guard let r = try? classifier.classify(upright) else { return }
 
         let kind = DocumentClassifier.kindFor(r.label)
+
+        // the civil extract: no liveness, read its QR code instead
+        if kind == ScanIDCard.KIND_CIVIL_EXTRACT
+            && r.confidence >= (card ? ScanIDCard.CLASSIFY_QR_MIN_CONF : ScanIDCard.CLASSIFY_QR_NO_CARD_CONF) {
+            enterQrMode("\(r)" + (card ? "" : " (no card outline)"), pb)
+            return
+        }
+        if !card { return }                                         // without an outline only the extract is decided
+
         let supported = kind == ScanIDCard.KIND_ID_FRONT || kind == ScanIDCard.KIND_ID_BACK
             || kind == ScanIDCard.KIND_LICENCE || kind == ScanIDCard.KIND_PERMIT
         // a class with "back" in its name (civil ID back, residence permit back, Syrian / Palestinian ID back ...)
@@ -960,6 +1002,39 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         // otherwise: keep trying on the next frame
     }
 
+    /// The document classifier, once (classifierFailed: not again).
+    private func loadClassifier() {
+        if docClassifier != nil || classifierFailed { return }
+        do {
+            docClassifier = try DocumentClassifier()
+        } catch {
+            classifierFailed = true
+            print("IdLiveness: document classifier could not be loaded: \(error)")
+        }
+    }
+
+    /// Document liveness OFF: only the civil extract is looked for (every CLASSIFY_NO_CARD_EVERY_MS, with or without a
+    /// card box, the same confidence bars as with the liveness on). Found: its QR mode, as with the liveness on.
+    /// Anything else changes nothing: the old capture goes on as before.
+    private func lookForExtract(_ pb: CVPixelBuffer) {
+        let now = nowMs()
+        if now - lastNoCardClassifyAt < ScanIDCard.CLASSIFY_NO_CARD_EVERY_MS { return }
+        lastNoCardClassifyAt = now
+        loadClassifier()
+        guard let classifier = docClassifier else { return }
+        let landscape = CVPixelBufferGetWidth(pb) > CVPixelBufferGetHeight(pb)
+        guard let upright = CardLivenessVision.analysisFrame(pb, longEdge: ANALYSIS_LONG_EDGE, rotateClockwise: landscape),
+              let r = try? classifier.classify(upright) else { return }
+        // a card box from the old capture's YOLO (the last frame's; none yet on the very first frame)
+        let card = result?.inferences.contains {
+            $0.className == "card" && environmentalConditions!.isPredictionValid(confidence: $0.confidence)
+        } ?? false
+        if DocumentClassifier.kindFor(r.label) == ScanIDCard.KIND_CIVIL_EXTRACT
+            && r.confidence >= (card ? ScanIDCard.CLASSIFY_QR_MIN_CONF : ScanIDCard.CLASSIFY_QR_NO_CARD_CONF) {
+            enterQrMode("\(r) (document liveness off" + (card ? "" : ", no card box") + ")", pb)
+        }
+    }
+
     /// Only the civil ID (front / back), the driving licence and the residence permit get the local liveness.
     private func applyKind(_ kind: String?, _ why: String) {
         let supported = kind == ScanIDCard.KIND_ID_FRONT || kind == ScanIDCard.KIND_ID_BACK
@@ -975,6 +1050,113 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         livenessKind = nil
         backShownLayout = false
         classifyStart = 0
+        lastNoCardClassifyAt = 0
+        if qrMode || qrLayoutShown {                                // the extract's QR step ends with the side
+            qrMode = false
+            hideQrLayout()
+        }
+        sheetPhoto = nil
+    }
+
+    // =============================================================================================
+    // The civil extract: its QR code (was ScanQr)
+    // =============================================================================================
+
+    /// The classifier saw the civil extract: no card liveness; the QR drawing and its instruction until a QR is read.
+    /// The frame it was recognised on shows the WHOLE sheet (the person has not moved in on the code yet): it is kept
+    /// and sent with the QR's text, instead of the close-up the QR is read on.
+    private func enterQrMode(_ why: String, _ wholeSheet: CVPixelBuffer) {
+        sheetPhoto = convertPixelToDataImage(pixelBuffer: wholeSheet)   // copied now: the camera reuses its buffer
+        livenessKind = nil
+        kindDecided = true
+        qrMode = true
+        print("IdLiveness: card: \(why) -> civil extract: read its QR code (no local liveness)")
+        showQrLayout()
+        hint(.scanQr)                                               // "move closer to the QR code"
+    }
+
+    /// One frame of the civil extract: the QR read on the whole frame (as ScanQr did), here on the camera thread, so a
+    /// frame is read at most once and the buffer is still valid. The first QR found is sent (starQrProcessing).
+    private func processQr(_ pb: CVPixelBuffer) {
+        showGuide(color: environmentalConditions!.HoldHandColor, notTransmitting: start, inTilt: qrLayoutShown)
+        if !start { return }
+        hint(.scanQr)                                               // (sent once; hint() skips repeats)
+        guard let text = ScanIDCard.readQr(pb) else { return }
+        start = false
+        sentKind = nil                                              // not an ID side: no ID number check
+        hideQrLayout()
+        // the whole extract (recognised before moving in); the close-up only if there is none
+        let fromSheet = sheetPhoto != nil
+        guard let photo = sheetPhoto ?? convertPixelToDataImage(pixelBuffer: pb) else {
+            start = true                                            // nothing to send: keep reading
+            showQrLayout()
+            return
+        }
+        log("civil extract: QR read -> sending the " + (fromSheet ? "whole sheet" : "QR close-up (no whole-sheet frame)"))
+        DispatchQueue.main.async { self.scanIDCardDelegate?.onSend() }   // was onStartQrScan
+        playSuccess()
+        remoteProcessing?.starQrProcessing(
+            url: BaseUrls.signalRHub + HubConnectionFunctions.etHubConnectionFunction(blockType: BlockType.QR),
+            image: photo,
+            appConfiguration: self.configModel!,
+            templatesByCountry: self.selectedTemplates,
+            connectionId: "ConnectionId",
+            stepIdString: String(self.stepId!),
+            metadata: text,
+            isManualCapture: false,
+            isAutoCapture: true,
+            onProgress: { progress in
+                self.scanIDCardDelegate?.onUploadingProgress(progress: progress)
+            },
+        ) { result in
+            switch result {
+            case .success(let model):
+                self.onMessageReceived(eventName: model?.destinationEndpoint ?? "", remoteProcessingModel: model!)
+            case .failure(_):
+                self.onMessageReceived(eventName: HubConnectionTargets.ON_ERROR, remoteProcessingModel: RemoteProcessingModel(
+                    destinationEndpoint: HubConnectionTargets.ON_ERROR,
+                    response: "",
+                    error: EventsErrorMessages.OnErrorMessage,
+                    success: false))
+            }
+        }
+    }
+
+    /// The first QR code's text in this frame (Vision, as ScanQr did), or nil.
+    private static func readQr(_ pb: CVPixelBuffer) -> String? {
+        let request = VNDetectBarcodesRequest()
+        request.symbologies = [.qr]
+        do {
+            try VNImageRequestHandler(cvPixelBuffer: pb, options: [:]).perform([request])
+        } catch {
+            return nil
+        }
+        for case let o as VNBarcodeObservation in request.results ?? [] {
+            if let s = o.payloadStringValue, !s.isEmpty { return s }
+        }
+        return nil
+    }
+
+    /// The QR drawing (Guide.showQrGifLayout) while the extract's code is being looked for. The guide is removed under it.
+    private func showQrLayout() {
+        if qrLayoutShown { return }
+        qrLayoutShown = true
+        DispatchQueue.main.async {
+            guard self.qrLayoutShown else { return }                // hidden again before this ran
+            self.qrLayoutView?.removeFromSuperview()                // never two on screen
+            self.qrLayoutView = try? self.guide.showQrGifLayout(view: self.view)
+            if self.qrLayoutView == nil { print("IdLiveness: QR drawing not shown") }
+        }
+    }
+
+    /// Removes the QR drawing (read / a reset of the side / a retry / the background / close).
+    private func hideQrLayout() {
+        qrLayoutShown = false
+        let work = {
+            self.qrLayoutView?.removeFromSuperview()
+            self.qrLayoutView = nil
+        }
+        if Thread.isMainThread { work() } else { DispatchQueue.main.async(execute: work) }
     }
 
     // =============================================================================================
@@ -2113,6 +2295,8 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
     @objc private func appWillResignActive() { interrupt() }
 
     private func interrupt() {
+        if qrLayoutShown { hideQrLayout() }
+        if qrMode { pendingReset = true }                           // the extract starts again after the background
         if cfg == nil { return }
         setTorch(false)
         hideTiltLayouts()

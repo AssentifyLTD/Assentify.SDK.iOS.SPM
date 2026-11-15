@@ -313,7 +313,7 @@ class RemoteProcessing {
     func starProcessingIDs(
         url: String,
         image: Data,
-        stepIdString: String,
+        stepIdString: String?,
         appConfiguration: ConfigModel,
         connectionId: String,
         clipsPath: String,
@@ -334,6 +334,7 @@ class RemoteProcessing {
         completion: @escaping (BaseResult<RemoteProcessingModel?, Error>) -> Void
         
     ) {
+      
         let traceIdentifier = UUID().uuidString
         let urlString = url
         guard let url = URL(string: urlString) else {
@@ -346,8 +347,11 @@ class RemoteProcessing {
         request.timeoutInterval = 120
         
         
-        
-        request.setValue(stepIdString, forHTTPHeaderField: "x-step-id")
+        if let stepId = stepIdString?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !stepId.isEmpty {
+            print("StepID \(stepId)")
+            request.setValue(stepId, forHTTPHeaderField: "x-step-id")
+        }
         request.setValue(appConfiguration.blockIdentifier, forHTTPHeaderField: "x-block-identifier")
         request.setValue(appConfiguration.flowIdentifier, forHTTPHeaderField: "x-flow-identifier")
         request.setValue(appConfiguration.flowInstanceId, forHTTPHeaderField: "x-flow-instance-id")
