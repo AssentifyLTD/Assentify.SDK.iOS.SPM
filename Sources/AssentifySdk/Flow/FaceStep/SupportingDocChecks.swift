@@ -91,6 +91,7 @@ enum SupportingDocChecks {
         if let key = output.keys.first(where: { $0.contains("OnBoardMe_FaceImageAcquisition_IsSkippedStatus") }) {
             output[key] = String(isSkip)
         }
+        
 
         if let key = output.keys.first(where: { $0.contains("OnBoardMe_FaceImageAcquisition_FaceAuthenticity") }) {
             if output[key] == "0" {
@@ -103,29 +104,90 @@ enum SupportingDocChecks {
         return output
     }
 
+    /// The face step's supporting-document output keys (exact names, as declared in the step's outputProperties).
+    enum OutputKey {
+        static let extractionsJSON  = "OnBoardMe_FaceImageAcquisition_SupportingDocumentExtractionsJSON"
+        static let image            = "OnBoardMe_FaceImageAcquisition_SupportingDocumentImage"
+        static let face             = "OnBoardMe_FaceImageAcquisition_SupportingDocumentFace"
+        static let firstName        = "OnBoardMe_FaceImageAcquisition_SupportingDocumentFirstName"
+        static let lastName         = "OnBoardMe_FaceImageAcquisition_SupportingDocumentLastName"
+        static let faceMatchOutcome = "OnBoardMe_FaceImageAcquisition_FaceMatchOutcome"
+        static let matchPercentage  = "OnBoardMe_FaceImageAcquisition_SupportingDocumentMatchPercentage"
+        static let mismatchFields   = "OnBoardMe_FaceImageAcquisition_IdentityMismatchFields"
+        static let finalMatchPercentage   = "OnBoardMe_FaceImageAcquisition_FinalMatchPercentage"
+    }
+
+    /// Keys read from the supporting document's transformed properties (exact names).
+    /// TODO: confirm these against a real passport / ID response.
+    enum DocumentKey {
+        static let originalImage = "OnBoardMe_IdentificationDocumentCapture_OriginalFrontImage"
+        static let firstName     = "OnBoardMe_IdentificationDocumentCapture_name"
+        static let lastName      = "OnBoardMe_IdentificationDocumentCapture_surname"
+    }
+
+    /// The values of OnBoardMe_FaceImageAcquisition_FaceMatchOutcome.
+    enum FaceMatchOutcome {
+        static let supportingDocumentSuccess = "SupportingDocumentSuccess"
+        static let supportingDocumentSkipped = "SupportingDocumentSkipped"
+    }
+
     /// Everything sent when the supporting-document step is done (Next or Skip on the result screen).
+    /// Call it BEFORE makeCurrentStepDone(): it reads the current (face) step's outputProperties.
     static func outputProperties(
         isSkip: Bool,
         faceResult: CompareFacesResponse?,
         identityResult: IdentityMatchResponse?,
-        documentProperties: [String: String]
+        documentProperties: [String: String],
+        documentFace: String,
+        flowController: FlowController
     ) -> [String: String] {
         var output = faceOutputProperties(model: FaceModelObject.shared.get(), isSkip: isSkip)
 
-        output["status"]     = (faceResult?.status).map { String($0) } ?? ""
-        output["scanStatus"] = faceResult?.scanStatus ?? ""
-        output["matchScore"] = (faceResult?.matchScore).map { String($0) } ?? ""
-        output["isLive"]     = (faceResult?.isLive).map { String($0) } ?? ""
-        output["error"]      = faceResult?.error ?? ""
+        // The face step as written in the config file, and the output keys it declares
+        let currentStepId = flowController.getCurrentStep()?.stepDefinition?.stepId
+        let step = ConfigModelObject.shared.get()?.stepDefinitions.first { $0.stepId == currentStepId }
+        let declaredProperties = step?.outputProperties ?? []
+        let declaredKeys = Set(declaredProperties.map { $0.key })
 
-        output["samePerson"] = (identityResult?.samePerson).map { String($0) } ?? ""
-        output["confidence"] = (identityResult?.confidence).map { String($0) } ?? ""
-        output["reason"]     = identityResult?.reason ?? ""
-
-        for (key, value) in documentProperties {
+        /// Writes a value only under a key the step declares (exact match).
+        func set(_ name: String, _ value: String) {
+            guard let key = declaredKeys.first(where: { $0 == name })
+                    ?? declaredKeys.first(where: { $0.contains(name) }) else { return }
             output[key] = value
         }
+
+        // 2) every extracted value of the supporting document, as one JSON string
+        set(OutputKey.extractionsJSON, jsonString(documentProperties))
+
+        // 3) 4) 5) single values from the document
+        set(OutputKey.image,     documentProperties[DocumentKey.originalImage] ?? "")
+        set(OutputKey.firstName, documentProperties[DocumentKey.firstName] ?? "")
+        set(OutputKey.lastName,  documentProperties[DocumentKey.lastName] ?? "")
+
+        // 6) the face cropped from the document (first item of faces)
+        set(OutputKey.face, documentFace)
+
+        
+        // 7) the identity fields that did not match
+        set(OutputKey.mismatchFields, identityResult?.reason ?? "")
+        // 8) the compare-faces score
+        set(OutputKey.matchPercentage, faceResult?.matchScore?.description ?? "")
+        set(OutputKey.finalMatchPercentage, faceResult?.matchScore?.description ?? "")
+
+        // 9) skipped or passed
+        set(OutputKey.faceMatchOutcome, isSkip
+            ? FaceMatchOutcome.supportingDocumentSkipped
+            : FaceMatchOutcome.supportingDocumentSuccess)
+
         return output
+    }
+
+    
+
+    private static func jsonString(_ properties: [String: String]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: properties, options: [.sortedKeys]),
+              let json = String(data: data, encoding: .utf8) else { return "{}" }
+        return json
     }
 
     // MARK: - Identity values

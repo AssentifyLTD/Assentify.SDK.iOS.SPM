@@ -36,7 +36,7 @@ Add the following to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/AssentifyLTD/Assentify.SDK.iOS.SPM.git", from: "1.0.0-Beta.38")
+    .package(url: "https://github.com/AssentifyLTD/Assentify.SDK.iOS.SPM.git", from: "1.0.0-Beta.40")
 ]
 ```
 
@@ -64,6 +64,9 @@ AssentifySdk pulls in the following packages automatically via SPM:
 - [TensorFlowLiteSwift](https://github.com/kewlbear/TensorFlowLiteSwift)
 
 ## Versions
+
+***1.0.0-Beta.40***
+1. *Supporting Document*
 
 ***1.0.0-Beta.39***
 1. *Supporting Document*

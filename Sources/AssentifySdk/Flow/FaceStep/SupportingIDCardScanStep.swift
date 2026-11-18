@@ -71,7 +71,9 @@ struct SupportingIDCardScanStep: View {
             isSkip: isSkip,
             faceResult: faceResult,
             identityResult: identityResult,
-            documentProperties: extractedInformation
+            documentProperties: extractedInformation,
+            documentFace: supportingDocImage,
+            flowController: flowController
         )
         flowController.makeCurrentStepDone(extractedInformation: outputs, timeStarted: timeStarted)
         flowController.naveToNextStep()
