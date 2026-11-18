@@ -62,7 +62,9 @@ struct SupportingPassportScanStep: View {
             isSkip: isSkip,
             faceResult: faceResult,
             identityResult: identityResult,
-            documentProperties: documentProperties
+            documentProperties: documentProperties,
+            documentFace: supportingDocImage,
+            flowController: flowController
         )
         flowController.makeCurrentStepDone(extractedInformation: outputs, timeStarted: timeStarted)
         flowController.naveToNextStep()
