@@ -63,6 +63,7 @@ public struct Customization: Codable {
     public let confirmationRequired: Bool?
     public let showResultPage: Bool?
     public let documentLiveness: Bool?
+    public let activeDocumentLiveness: Bool?
     public let storeCapturedDocument: Bool?
     public let performLivenessDetection: Bool?
     public let stepTypeDto: StepTypeDto

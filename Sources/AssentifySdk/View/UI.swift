@@ -502,282 +502,369 @@ class Guide{
       }
 
     
-    func showLbTiltPassportLayout(view: UIView) throws -> UIView {
-        let name = "passport_tilt_preview"
+    func showLbTiltPassportLayout(view: UIView, color: String) throws -> UIView {
+            let name = "passport_tilt_preview"
+        let tint = UIColor(argbHex: color)   // ✅ was hexString
 
-        func imageView(_ image: UIImage) -> UIImageView {
-            let iv = UIImageView(image: image)
-            iv.contentMode = .scaleToFill          // drawing is made for a full screen
-            iv.backgroundColor = .clear
-            iv.isOpaque = false
-            return iv
+         func imageView(_ image: UIImage) -> UIImageView {
+             let iv = UIImageView(image: tint != nil ? image.withRenderingMode(.alwaysTemplate) : image)
+             iv.contentMode = .scaleToFill
+             iv.backgroundColor = .clear
+             iv.isOpaque = false
+             if let tint = tint { iv.tintColor = tint }   // ✅ restored
+             return iv
+         }
+
+
+            let content: UIView
+            if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
+                if tint != nil, let frames = gif.images, !frames.isEmpty {
+                    let templateFrames = frames.map { $0.withRenderingMode(.alwaysTemplate) }
+                    let animated = UIImage.animatedImage(with: templateFrames, duration: gif.duration) ?? gif
+                    content = imageView(animated)
+                } else {
+                    content = imageView(gif)
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
+                      let svg = SVGKImage(contentsOfFile: path) {                            // .svg
+                if tint != nil {
+                    svg.size = UIScreen.main.bounds.size
+                    guard let rendered = svg.uiImage else {
+                        throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                    }
+                    content = imageView(rendered)
+                } else if let sv = SVGKFastImageView(svgkImage: svg) {
+                    sv.contentMode = .scaleToFill
+                    sv.backgroundColor = .clear
+                    sv.isOpaque = false
+                    content = sv
+                } else {
+                    throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "png")
+                        ?? Bundle.module.path(forResource: name, ofType: "jpg"),
+                      let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
+                content = imageView(img)
+            } else {
+                throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+            }
+
+            let containerView = UIView()
+            containerView.translatesAutoresizingMaskIntoConstraints = false
+            containerView.backgroundColor = .clear
+            containerView.isOpaque = false
+            containerView.isUserInteractionEnabled = false   // full-screen overlay must not block the back button
+
+            content.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(content)
+            view.addSubview(containerView)
+
+            NSLayoutConstraint.activate([
+                content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                content.topAnchor.constraint(equalTo: containerView.topAnchor),
+                content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+
+                containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                containerView.topAnchor.constraint(equalTo: view.topAnchor),
+                containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+
+            return containerView
         }
 
-        let content: UIView
-        if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
-            content = imageView(gif)
-        } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
-                  let svg = SVGKImage(contentsOfFile: path),
-                  let sv = SVGKFastImageView(svgkImage: svg) {                            // .svg
-            sv.contentMode = .scaleToFill
-            sv.backgroundColor = .clear
-            sv.isOpaque = false
-            content = sv
-        } else if let path = Bundle.module.path(forResource: name, ofType: "png")
-                    ?? Bundle.module.path(forResource: name, ofType: "jpg"),
-                  let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
-            content = imageView(img)
-        } else {
-            throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+        func showTiltIDTopLayout(view: UIView, color: String) throws -> UIView {
+            let name = "id_top_tilt_preview"
+            let tint = UIColor(argbHex: color)   // ✅ was hexString
+
+             func imageView(_ image: UIImage) -> UIImageView {
+                 let iv = UIImageView(image: tint != nil ? image.withRenderingMode(.alwaysTemplate) : image)
+                 iv.contentMode = .scaleToFill
+                 iv.backgroundColor = .clear
+                 iv.isOpaque = false
+                 if let tint = tint { iv.tintColor = tint }   // ✅ restored
+                 return iv
+             }
+
+
+            let content: UIView
+            if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
+                if tint != nil, let frames = gif.images, !frames.isEmpty {
+                    let templateFrames = frames.map { $0.withRenderingMode(.alwaysTemplate) }
+                    let animated = UIImage.animatedImage(with: templateFrames, duration: gif.duration) ?? gif
+                    content = imageView(animated)
+                } else {
+                    content = imageView(gif)
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
+                      let svg = SVGKImage(contentsOfFile: path) {                            // .svg
+                if tint != nil {
+                    svg.size = UIScreen.main.bounds.size
+                    guard let rendered = svg.uiImage else {
+                        throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                    }
+                    content = imageView(rendered)
+                } else if let sv = SVGKFastImageView(svgkImage: svg) {
+                    sv.contentMode = .scaleToFill
+                    sv.backgroundColor = .clear
+                    sv.isOpaque = false
+                    content = sv
+                } else {
+                    throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "png")
+                        ?? Bundle.module.path(forResource: name, ofType: "jpg"),
+                      let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
+                content = imageView(img)
+            } else {
+                throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+            }
+
+            let containerView = UIView()
+            containerView.translatesAutoresizingMaskIntoConstraints = false
+            containerView.backgroundColor = .clear
+            containerView.isOpaque = false
+            containerView.isUserInteractionEnabled = false
+
+            content.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(content)
+            view.addSubview(containerView)
+
+            NSLayoutConstraint.activate([
+                content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                content.topAnchor.constraint(equalTo: containerView.topAnchor),
+                content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+
+                containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                containerView.topAnchor.constraint(equalTo: view.topAnchor),
+                containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+
+            return containerView
         }
 
-        let containerView = UIView()
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.backgroundColor = .clear
-        containerView.isOpaque = false
-        containerView.isUserInteractionEnabled = false   // full-screen overlay must not block the back button
+        func showTiltIDRightLayout(view: UIView, color: String) throws -> UIView {
+            let name = "id_right_tilt_preview"
+            let tint = UIColor(argbHex: color)   // ✅ was hexString
 
-        content.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(content)
-        view.addSubview(containerView)
+             func imageView(_ image: UIImage) -> UIImageView {
+                 let iv = UIImageView(image: tint != nil ? image.withRenderingMode(.alwaysTemplate) : image)
+                 iv.contentMode = .scaleToFill
+                 iv.backgroundColor = .clear
+                 iv.isOpaque = false
+                 if let tint = tint { iv.tintColor = tint }   // ✅ restored
+                 return iv
+             }
 
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            content.topAnchor.constraint(equalTo: containerView.topAnchor),
-            content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
 
-            // full screen, same as the card guide SVG
-            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            containerView.topAnchor.constraint(equalTo: view.topAnchor),
-            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
+            let content: UIView
+            if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
+                if tint != nil, let frames = gif.images, !frames.isEmpty {
+                    let templateFrames = frames.map { $0.withRenderingMode(.alwaysTemplate) }
+                    let animated = UIImage.animatedImage(with: templateFrames, duration: gif.duration) ?? gif
+                    content = imageView(animated)
+                } else {
+                    content = imageView(gif)
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
+                      let svg = SVGKImage(contentsOfFile: path) {                            // .svg
+                if tint != nil {
+                    svg.size = UIScreen.main.bounds.size
+                    guard let rendered = svg.uiImage else {
+                        throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                    }
+                    content = imageView(rendered)
+                } else if let sv = SVGKFastImageView(svgkImage: svg) {
+                    sv.contentMode = .scaleToFill
+                    sv.backgroundColor = .clear
+                    sv.isOpaque = false
+                    content = sv
+                } else {
+                    throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "png")
+                        ?? Bundle.module.path(forResource: name, ofType: "jpg"),
+                      let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
+                content = imageView(img)
+            } else {
+                throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+            }
 
-        return containerView
-    }
-    
-    func showTiltIDTopLayout(view: UIView) throws -> UIView {
-        let name = "id_top_tilt_preview"
+            let containerView = UIView()
+            containerView.translatesAutoresizingMaskIntoConstraints = false
+            containerView.backgroundColor = .clear
+            containerView.isOpaque = false
+            containerView.isUserInteractionEnabled = false
 
-        func imageView(_ image: UIImage) -> UIImageView {
-            let iv = UIImageView(image: image)
-            iv.contentMode = .scaleToFill          // drawing is made for a full screen
-            iv.backgroundColor = .clear
-            iv.isOpaque = false
-            return iv
+            content.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(content)
+            view.addSubview(containerView)
+
+            NSLayoutConstraint.activate([
+                content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                content.topAnchor.constraint(equalTo: containerView.topAnchor),
+                content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+
+                containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                containerView.topAnchor.constraint(equalTo: view.topAnchor),
+                containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+
+            return containerView
         }
 
-        let content: UIView
-        if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
-            content = imageView(gif)
-        } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
-                  let svg = SVGKImage(contentsOfFile: path),
-                  let sv = SVGKFastImageView(svgkImage: svg) {                            // .svg
-            sv.contentMode = .scaleToFill
-            sv.backgroundColor = .clear
-            sv.isOpaque = false
-            content = sv
-        } else if let path = Bundle.module.path(forResource: name, ofType: "png")
-                    ?? Bundle.module.path(forResource: name, ofType: "jpg"),
-                  let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
-            content = imageView(img)
-        } else {
-            throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+        func showTiltIDBottomLayout(view: UIView, color: String) throws -> UIView {
+            let name = "id_bottom_tilt_preview"
+            let tint = UIColor(argbHex: color)   // ✅ was hexString
+
+             func imageView(_ image: UIImage) -> UIImageView {
+                 let iv = UIImageView(image: tint != nil ? image.withRenderingMode(.alwaysTemplate) : image)
+                 iv.contentMode = .scaleToFill
+                 iv.backgroundColor = .clear
+                 iv.isOpaque = false
+                 if let tint = tint { iv.tintColor = tint }   // ✅ restored
+                 return iv
+             }
+
+
+            let content: UIView
+            if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
+                if tint != nil, let frames = gif.images, !frames.isEmpty {
+                    let templateFrames = frames.map { $0.withRenderingMode(.alwaysTemplate) }
+                    let animated = UIImage.animatedImage(with: templateFrames, duration: gif.duration) ?? gif
+                    content = imageView(animated)
+                } else {
+                    content = imageView(gif)
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
+                      let svg = SVGKImage(contentsOfFile: path) {                            // .svg
+                if tint != nil {
+                    svg.size = UIScreen.main.bounds.size
+                    guard let rendered = svg.uiImage else {
+                        throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                    }
+                    content = imageView(rendered)
+                } else if let sv = SVGKFastImageView(svgkImage: svg) {
+                    sv.contentMode = .scaleToFill
+                    sv.backgroundColor = .clear
+                    sv.isOpaque = false
+                    content = sv
+                } else {
+                    throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "png")
+                        ?? Bundle.module.path(forResource: name, ofType: "jpg"),
+                      let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
+                content = imageView(img)
+            } else {
+                throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+            }
+
+            let containerView = UIView()
+            containerView.translatesAutoresizingMaskIntoConstraints = false
+            containerView.backgroundColor = .clear
+            containerView.isOpaque = false
+            containerView.isUserInteractionEnabled = false
+
+            content.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(content)
+            view.addSubview(containerView)
+
+            NSLayoutConstraint.activate([
+                content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                content.topAnchor.constraint(equalTo: containerView.topAnchor),
+                content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+
+                containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                containerView.topAnchor.constraint(equalTo: view.topAnchor),
+                containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+
+            return containerView
         }
 
-        let containerView = UIView()
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.backgroundColor = .clear
-        containerView.isOpaque = false
-        containerView.isUserInteractionEnabled = false   // full-screen overlay must not block the back button
+        func showBarCodeGifLayout(view: UIView, color: String) throws -> UIView {
+            let name = "id_barcode_gif"
+            let tint = UIColor(argbHex: color)   // ✅ was hexString
 
-        content.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(content)
-        view.addSubview(containerView)
+             func imageView(_ image: UIImage) -> UIImageView {
+                 let iv = UIImageView(image: tint != nil ? image.withRenderingMode(.alwaysTemplate) : image)
+                 iv.contentMode = .scaleToFill
+                 iv.backgroundColor = .clear
+                 iv.isOpaque = false
+                 if let tint = tint { iv.tintColor = tint }   // ✅ restored
+                 return iv
+             }
 
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            content.topAnchor.constraint(equalTo: containerView.topAnchor),
-            content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
 
-            // full screen, same as the card guide SVG
-            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            containerView.topAnchor.constraint(equalTo: view.topAnchor),
-            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
+            let content: UIView
+            if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
+                if tint != nil, let frames = gif.images, !frames.isEmpty {
+                    let templateFrames = frames.map { $0.withRenderingMode(.alwaysTemplate) }
+                    let animated = UIImage.animatedImage(with: templateFrames, duration: gif.duration) ?? gif
+                    content = imageView(animated)
+                } else {
+                    content = imageView(gif)
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
+                      let svg = SVGKImage(contentsOfFile: path) {                            // .svg
+                if tint != nil {
+                    svg.size = UIScreen.main.bounds.size
+                    guard let rendered = svg.uiImage else {
+                        throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                    }
+                    content = imageView(rendered)
+                } else if let sv = SVGKFastImageView(svgkImage: svg) {
+                    sv.contentMode = .scaleToFill
+                    sv.backgroundColor = .clear
+                    sv.isOpaque = false
+                    content = sv
+                } else {
+                    throw GuideError.tiltDrawingNotFound(name + ".svg could not be rendered")
+                }
+            } else if let path = Bundle.module.path(forResource: name, ofType: "png")
+                        ?? Bundle.module.path(forResource: name, ofType: "jpg"),
+                      let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
+                content = imageView(img)
+            } else {
+                throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
+            }
 
-        return containerView
-    }
-    
-    func showTiltIDRightLayout(view: UIView) throws -> UIView {
-        let name = "id_right_tilt_preview"
+            let containerView = UIView()
+            containerView.translatesAutoresizingMaskIntoConstraints = false
+            containerView.backgroundColor = .clear
+            containerView.isOpaque = false
+            containerView.isUserInteractionEnabled = false
 
-        func imageView(_ image: UIImage) -> UIImageView {
-            let iv = UIImageView(image: image)
-            iv.contentMode = .scaleToFill          // drawing is made for a full screen
-            iv.backgroundColor = .clear
-            iv.isOpaque = false
-            return iv
+            content.translatesAutoresizingMaskIntoConstraints = false
+            containerView.addSubview(content)
+            view.addSubview(containerView)
+
+            NSLayoutConstraint.activate([
+                content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                content.topAnchor.constraint(equalTo: containerView.topAnchor),
+                content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+
+                containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+                containerView.topAnchor.constraint(equalTo: view.topAnchor),
+                containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            ])
+
+            return containerView
         }
 
-        let content: UIView
-        if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
-            content = imageView(gif)
-        } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
-                  let svg = SVGKImage(contentsOfFile: path),
-                  let sv = SVGKFastImageView(svgkImage: svg) {                            // .svg
-            sv.contentMode = .scaleToFill
-            sv.backgroundColor = .clear
-            sv.isOpaque = false
-            content = sv
-        } else if let path = Bundle.module.path(forResource: name, ofType: "png")
-                    ?? Bundle.module.path(forResource: name, ofType: "jpg"),
-                  let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
-            content = imageView(img)
-        } else {
-            throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
-        }
 
-        let containerView = UIView()
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.backgroundColor = .clear
-        containerView.isOpaque = false
-        containerView.isUserInteractionEnabled = false   // full-screen overlay must not block the back button
+    // MARK: - Put this once, at file level (outside your class)
 
-        content.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(content)
-        view.addSubview(containerView)
-
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            content.topAnchor.constraint(equalTo: containerView.topAnchor),
-            content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-
-            // full screen, same as the card guide SVG
-            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            containerView.topAnchor.constraint(equalTo: view.topAnchor),
-            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-
-        return containerView
-    }
-    
-    func showTiltIDBottomLayout(view: UIView) throws -> UIView {
-        let name = "id_bottom_tilt_preview"
-
-        func imageView(_ image: UIImage) -> UIImageView {
-            let iv = UIImageView(image: image)
-            iv.contentMode = .scaleToFill          // drawing is made for a full screen
-            iv.backgroundColor = .clear
-            iv.isOpaque = false
-            return iv
-        }
-
-        let content: UIView
-        if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
-            content = imageView(gif)
-        } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
-                  let svg = SVGKImage(contentsOfFile: path),
-                  let sv = SVGKFastImageView(svgkImage: svg) {                            // .svg
-            sv.contentMode = .scaleToFill
-            sv.backgroundColor = .clear
-            sv.isOpaque = false
-            content = sv
-        } else if let path = Bundle.module.path(forResource: name, ofType: "png")
-                    ?? Bundle.module.path(forResource: name, ofType: "jpg"),
-                  let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
-            content = imageView(img)
-        } else {
-            throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
-        }
-
-        let containerView = UIView()
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.backgroundColor = .clear
-        containerView.isOpaque = false
-        containerView.isUserInteractionEnabled = false   // full-screen overlay must not block the back button
-
-        content.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(content)
-        view.addSubview(containerView)
-
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            content.topAnchor.constraint(equalTo: containerView.topAnchor),
-            content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-
-            // full screen, same as the card guide SVG
-            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            containerView.topAnchor.constraint(equalTo: view.topAnchor),
-            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-
-        return containerView
-    }
-    
-    
-    func showBarCodeGifLayout(view: UIView) throws -> UIView {
-        let name = "id_barcode_gif"
-
-        func imageView(_ image: UIImage) -> UIImageView {
-            let iv = UIImageView(image: image)
-            iv.contentMode = .scaleToFill          // drawing is made for a full screen
-            iv.backgroundColor = .clear
-            iv.isOpaque = false
-            return iv
-        }
-
-        let content: UIView
-        if let gif = UIImage.gifImageWithName(name) {                                   // .gif (animated)
-            content = imageView(gif)
-        } else if let path = Bundle.module.path(forResource: name, ofType: "svg"),
-                  let svg = SVGKImage(contentsOfFile: path),
-                  let sv = SVGKFastImageView(svgkImage: svg) {                            // .svg
-            sv.contentMode = .scaleToFill
-            sv.backgroundColor = .clear
-            sv.isOpaque = false
-            content = sv
-        } else if let path = Bundle.module.path(forResource: name, ofType: "png")
-                    ?? Bundle.module.path(forResource: name, ofType: "jpg"),
-                  let img = UIImage(contentsOfFile: path) {                               // .png / .jpg
-            content = imageView(img)
-        } else {
-            throw GuideError.tiltDrawingNotFound(name + " (.gif / .svg / .png / .jpg) in Bundle.module")
-        }
-
-        let containerView = UIView()
-        containerView.translatesAutoresizingMaskIntoConstraints = false
-        containerView.backgroundColor = .clear
-        containerView.isOpaque = false
-        containerView.isUserInteractionEnabled = false   // full-screen overlay must not block the back button
-
-        content.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(content)
-        view.addSubview(containerView)
-
-        NSLayoutConstraint.activate([
-            content.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            content.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            content.topAnchor.constraint(equalTo: containerView.topAnchor),
-            content.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-
-            // full screen, same as the card guide SVG
-            containerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            containerView.topAnchor.constraint(equalTo: view.topAnchor),
-            containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-
-        return containerView
-    }
-    
     /// The QR box's size: a square, this share of the screen's width (the handover's code box is about 0.55).
     private static let QR_BOX_WIDTH_FRACTION: CGFloat = 0.6
 
@@ -871,4 +958,24 @@ extension UIColor {
 }
 
 
+extension UIColor {
+    /// Accepts "#RRGGBB", "RRGGBB", "#AARRGGBB" (same order as Android). Returns nil if invalid.
+    convenience init?(argbHex: String) {
+        var hex = argbHex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if hex.hasPrefix("#") { hex.removeFirst() }
+        guard hex.count == 6 || hex.count == 8,
+              let value = UInt64(hex, radix: 16) else { return nil }
+
+        let a, r, g, b: UInt64
+        if hex.count == 8 {
+            a = (value >> 24) & 0xFF; r = (value >> 16) & 0xFF
+            g = (value >> 8) & 0xFF;  b = value & 0xFF
+        } else {
+            a = 0xFF; r = (value >> 16) & 0xFF
+            g = (value >> 8) & 0xFF;  b = value & 0xFF
+        }
+        self.init(red: CGFloat(r) / 255, green: CGFloat(g) / 255,
+                  blue: CGFloat(b) / 255, alpha: CGFloat(a) / 255)
+    }
+}
 

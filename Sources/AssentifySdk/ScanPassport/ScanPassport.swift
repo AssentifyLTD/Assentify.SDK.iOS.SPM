@@ -30,6 +30,7 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
     private var apiKey: String
     private var processMrz: Bool?
     private var performLivenessDocument: Bool?
+    private var activeDocumentLiveness: Bool?
     private var saveCapturedVideoID: Bool?
     private var storeCapturedDocument: Bool?
     private var language: String
@@ -221,6 +222,7 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
         if(enableSupportingDocument){
             self.stepId = nil
             performLivenessDocument = true
+            activeDocumentLiveness = true
             processMrz = true
             storeCapturedDocument = true
             saveCapturedVideoID = true
@@ -241,6 +243,9 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
             }
             for item in self.configModel!.stepDefinitions {
                 if let stepIdInt = self.stepId, stepIdInt == item.stepId {
+                    if activeDocumentLiveness == nil {
+                        activeDocumentLiveness = item.customization.activeDocumentLiveness
+                    }
                     if performLivenessDocument == nil {
                         performLivenessDocument = item.customization.documentLiveness
                     }
@@ -347,7 +352,7 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
             pendingReset = false
             resetLiveness()
         }
-        let livenessOn = performLivenessDocument == true && configReady && loadFinder()
+        let livenessOn = activeDocumentLiveness == true && configReady && loadFinder()
         if livenessOn {
             processLiveness(pixelBuffer)
         } else {                                                    // the capture as before
@@ -558,16 +563,27 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
                     self.scanPassportDelegate?.onRetry(dataModel:remoteProcessingModel )
                     self.start = true
                 }else{
-                    self.start = false
-                    if(self.language == Language.NON){
-                        self.scanPassportDelegate?.onComplete(dataModel:self.passportResponseModel! )
+                    
+                    if passportExtractedModel?.mrzVizChecked == true && passportExtractedModel?.mrzVizMismatch == true {
+                        self.retryCount = self.retryCount + 1;
+                        remoteProcessingModel.error = EventsErrorMessages.OnPassportMrzMismatchMessage
+                        self.scanPassportDelegate?.onRetry(dataModel:remoteProcessingModel )
+                        self.start = true
                     }else{
-                        let transformed = LanguageTransformation(apiKey: self.apiKey,languageTransformationDelegate: self)
-                        transformed.languageTransformation(
-                            langauge: self.language,
-                            transformationModel: preparePropertiesToTranslate(language: self.language, properties: passportExtractedModel?.outputProperties)
-                        )
+                        self.start = false
+                        if(self.language == Language.NON){
+                            self.scanPassportDelegate?.onComplete(dataModel:self.passportResponseModel! )
+                        }else{
+                            let transformed = LanguageTransformation(apiKey: self.apiKey,languageTransformationDelegate: self)
+                            transformed.languageTransformation(
+                                langauge: self.language,
+                                transformationModel: preparePropertiesToTranslate(language: self.language, properties: passportExtractedModel?.outputProperties)
+                            )
+                        }
                     }
+                    
+                    
+                   
                     
                 }
                
@@ -1098,7 +1114,7 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
         DispatchQueue.main.async {
             self.tiltLayoutView?.removeFromSuperview()              // never two on screen
             do {
-                self.tiltLayoutView = try self.guide.showLbTiltPassportLayout(view: self.view)
+                self.tiltLayoutView = try self.guide.showLbTiltPassportLayout(view: self.view,color:self.environmentalConditions!.HoldHandColor)
             } catch {
                 self.tiltLayoutView = nil                           // no drawing: the text and the meter still guide
                 print("PassportLiveness: tilt drawing not shown: \(error)")
@@ -1724,7 +1740,7 @@ public class ScanPassport :UIViewController, CameraSetupDelegate , RemoteProcess
 
     /// No analysed frame for stallMs ends the capture (vision_stalled). Runs on the main thread (Timer).
     private func checkStall() {
-        guard cfg != nil, performLivenessDocument == true, start, phase != .done else { return }
+        guard cfg != nil, activeDocumentLiveness == true, start, phase != .done else { return }
         let last = lastFrameAt
         if last == 0 || nowMs() - last <= STALL_MS { return }
         log("vision_stalled: no frame for \(STALL_MS) ms")

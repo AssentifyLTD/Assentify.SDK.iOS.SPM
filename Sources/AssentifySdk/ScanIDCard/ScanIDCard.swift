@@ -33,6 +33,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
     private var apiKey: String
     private var processMrz: Bool?
     private var performLivenessDocument: Bool?
+    private var activeDocumentLiveness: Bool?
     private var saveCapturedVideoID: Bool?
     private var storeCapturedDocument: Bool?
     private var language: String?
@@ -271,6 +272,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         if(enableSupportingDocument){
             self.stepId = nil
             performLivenessDocument = true
+            activeDocumentLiveness = true
             processMrz = true
             storeCapturedDocument = true
             saveCapturedVideoID = true
@@ -292,6 +294,9 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
             
             for item in self.configModel!.stepDefinitions {
                 if let stepIdInt = self.stepId, stepIdInt == item.stepId {
+                    if activeDocumentLiveness == nil {
+                        activeDocumentLiveness = item.customization.activeDocumentLiveness
+                    }
                     if performLivenessDocument == nil {
                        performLivenessDocument = item.customization.documentLiveness
                     }
@@ -429,7 +434,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         }
 
         // local liveness when the step's document liveness is on, and only for the cards it is defined for
-        let localAllowed = performLivenessDocument == true && loadFinder()
+        let localAllowed = activeDocumentLiveness == true && loadFinder()
         if localAllowed && start && !kindDecided {
             decideKind(pixelBuffer)
             if !kindDecided {                                       // still looking: no capture of any kind yet
@@ -680,7 +685,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
                     error: remoteProcessingModel.error,
                     success: remoteProcessingModel.success
                 )
-
+                
                 // the ID number check, when the side that just passed is the civil ID front
                 if self.sentKind == ScanIDCard.KIND_ID_FRONT {
                     let number = ScanIDCard.documentNumberOf(iDExtractedModel?.outputProperties)
@@ -703,16 +708,25 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
                     }
                 }
                 
-                if(self.language == Language.NON){
-                    self.scanIDCardDelegate?.onComplete(dataModel:self.iDResponseModel!,isFrontPage: self.isFrontPage(),isLastPage: self.isLastPage,classifiedTemplate: self.classifiedTemplate )
-                    self.start = false
+                if iDExtractedModel?.barcodeOcrChecked == true && iDExtractedModel?.barcodeOcrMismatch == true {
+                    self.retryCount = self.retryCount + 1;
+                    remoteProcessingModel.error = EventsErrorMessages.OnBarcodeMismatchMessage
+                    self.scanIDCardDelegate?.onRetry(dataModel:remoteProcessingModel )
+                    self.start = true
                 }else{
-                    let transformed = LanguageTransformation(apiKey: self.apiKey,languageTransformationDelegate: self)
-                       transformed.languageTransformation(
-                           langauge: self.language!,
-                           transformationModel: preparePropertiesToTranslate(language: self.language!, properties: iDExtractedModel?.outputProperties)
-                       )
+                    if(self.language == Language.NON){
+                        self.scanIDCardDelegate?.onComplete(dataModel:self.iDResponseModel!,isFrontPage: self.isFrontPage(),isLastPage: self.isLastPage,classifiedTemplate: self.classifiedTemplate )
+                        self.start = false
+                    }else{
+                        let transformed = LanguageTransformation(apiKey: self.apiKey,languageTransformationDelegate: self)
+                           transformed.languageTransformation(
+                               langauge: self.language!,
+                               transformationModel: preparePropertiesToTranslate(language: self.language!, properties: iDExtractedModel?.outputProperties)
+                           )
+                    }
                 }
+                
+               
                 
             }  else if eventName == HubConnectionTargets.ON_RETRY{
                 self.retryCount = self.retryCount + 1;
@@ -1435,9 +1449,9 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
             self.tiltLayoutView?.removeFromSuperview()              // never two on screen
             let v: UIView?
             switch dir {
-            case "right": v = try? self.guide.showTiltIDRightLayout(view: self.view)
-            case "top": v = try? self.guide.showTiltIDTopLayout(view: self.view)
-            default: v = try? self.guide.showTiltIDBottomLayout(view: self.view)
+            case "right": v = try? self.guide.showTiltIDRightLayout(view: self.view,color:self.environmentalConditions!.HoldHandColor)
+            case "top": v = try? self.guide.showTiltIDTopLayout(view: self.view,color:self.environmentalConditions!.HoldHandColor)
+            default: v = try? self.guide.showTiltIDBottomLayout(view: self.view,color:self.environmentalConditions!.HoldHandColor)
             }
             self.tiltLayoutView = v
             if v == nil { print("IdLiveness: tilt drawing (\(dir)) not shown") }
@@ -1460,7 +1474,7 @@ public class ScanIDCard :UIViewController, CameraSetupDelegate , RemoteProcessin
         DispatchQueue.main.async {
             guard self.barcodeLayoutShown else { return }           // hidden again before this ran
             self.barcodeLayoutView?.removeFromSuperview()           // never two on screen
-            self.barcodeLayoutView = try? self.guide.showBarCodeGifLayout(view: self.view)
+            self.barcodeLayoutView = try? self.guide.showBarCodeGifLayout(view: self.view,color:self.environmentalConditions!.HoldHandColor)
             if self.barcodeLayoutView == nil { print("IdLiveness: barcode drawing not shown") }
         }
     }

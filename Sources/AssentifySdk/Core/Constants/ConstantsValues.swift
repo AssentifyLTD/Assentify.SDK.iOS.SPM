@@ -54,6 +54,10 @@ public struct EventsErrorMessages {
     public   static let OnRetryFaceMessage = "We could not complete your request"
     public   static let OnLivenessFaceUpdateMessage = "Please make sure your face is well lit, look directly at the camera, and avoid using photos or videos"
     public   static let OnExpiredPassportMessage = "Expired Passport Detected"
+    
+    public   static let OnPassportMrzMismatchMessage = "Passport MRZ Data Mismatch"
+    
+    public   static let OnBarcodeMismatchMessage = "Barcode Data Mismatch"
 }
 
 

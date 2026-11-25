@@ -24,14 +24,18 @@ import Foundation
     public var imageUrl: String?
     public var faces: [String]?
     public var identificationDocumentCapture: IdentificationDocumentCapture?
-
-    init(outputProperties: [String: Any]? = nil,transformedProperties: [String: String]?, extractedData: [String: Any]? = nil, imageUrl: String? = nil, faces: [String]? = nil,identificationDocumentCapture:IdentificationDocumentCapture) {
+    public var mrzVizChecked: Bool?
+    public var mrzVizMismatch: Bool?
+    
+    init(outputProperties: [String: Any]? = nil,transformedProperties: [String: String]?, extractedData: [String: Any]? = nil, imageUrl: String? = nil, faces: [String]? = nil,identificationDocumentCapture:IdentificationDocumentCapture,mrzVizChecked:Bool?,mrzVizMismatch:Bool?) {
         self.outputProperties = outputProperties
         self.extractedData = extractedData
         self.imageUrl = imageUrl
         self.faces = faces
         self.identificationDocumentCapture = identificationDocumentCapture
         self.transformedProperties = transformedProperties
+        self.mrzVizChecked = mrzVizChecked
+        self.mrzVizMismatch = mrzVizMismatch
     }
     
    static func fromJsonString(responseString: String,transformedProperties: [String: String]) -> PassportExtractedModel? {
@@ -39,6 +43,9 @@ import Foundation
               let response = try? JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any] else {
             return nil
         }
+       
+       let mrzVizChecked = response["mrz_viz_checked"] as? Bool?
+       let mrzVizMismatch = response["mrz_viz_mismatch"] as? Bool?
 
         var faces: [String] = []
         if let faceArray = response["faces"] as? [[String: Any]] {
@@ -72,7 +79,7 @@ import Foundation
        
        
         var  identificationDocumentCapture = fillIdentificationDocumentCapture(outputProperties:outputProperties )
-       return PassportExtractedModel(outputProperties: outputProperties,transformedProperties: transformedPropertiesResult, extractedData: extractedData, imageUrl: imageUrl, faces: faces,identificationDocumentCapture:identificationDocumentCapture)
+       return PassportExtractedModel(outputProperties: outputProperties,transformedProperties: transformedPropertiesResult, extractedData: extractedData, imageUrl: imageUrl, faces: faces,identificationDocumentCapture:identificationDocumentCapture,mrzVizChecked: mrzVizChecked ?? false,mrzVizMismatch:mrzVizMismatch ?? false)
     }
     
     
@@ -107,7 +114,7 @@ import Foundation
         
         
          var  identificationDocumentCapture = fillIdentificationDocumentCapture(outputProperties:outputProperties )
-        return PassportExtractedModel(outputProperties: outputProperties,transformedProperties: transformedPropertiesResult, extractedData: extractedData, imageUrl: imageUrl, faces: faces,identificationDocumentCapture:identificationDocumentCapture)
+        return PassportExtractedModel(outputProperties: outputProperties,transformedProperties: transformedPropertiesResult, extractedData: extractedData, imageUrl: imageUrl, faces: faces,identificationDocumentCapture:identificationDocumentCapture,mrzVizChecked:false,mrzVizMismatch:false)
      }
     
     

@@ -296,13 +296,27 @@ public struct PassportScanStep: View {
             .ignoresSafeArea()
             
             if screenEvent == .idle {
+                let isManual = assentifySdk?.isManual() ?? false
                 VStack {
+                    // ---------- TOP: the instruction (whenever the tilt meter is not shown) ----------
+                    if !isManual && !showHoldPopup {               // the instructions start once the popup is closed
+                        LivenessFeedbackView(
+                            text: tiltProgressVisible ? "" : feedbackText,
+                            progress: tiltProgress,
+                            showProgress: false,
+                            edge: .top
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)                          // under the back / logo row
+                    }
+
                     Spacer()
                     
-                    if !(assentifySdk?.isManual() ?? false) {
-                        if !showHoldPopup {                         // the instructions start once the popup is closed
+                    if !isManual {
+                        // ---------- BOTTOM: the instruction with the tilt meter (only while the passport is tilted) ----------
+                        if !showHoldPopup {
                             LivenessFeedbackView(
-                                text: feedbackText,
+                                text: tiltProgressVisible ? feedbackText : "",
                                 progress: tiltProgress,
                                 showProgress: tiltProgressVisible
                             )
@@ -322,6 +336,7 @@ public struct PassportScanStep: View {
                         .padding(.vertical, 25)
                     }
                 }
+                .animation(.easeInOut(duration: 0.22), value: tiltProgressVisible)
                 .zIndex(1)
             }
             
@@ -406,17 +421,19 @@ public struct PassportScanStep: View {
 // MARK: - The instruction box with the tilt meter (LivenessFeedback in PassportScanActivity.kt)
 
 /// The instruction in a rounded box, with the tilt meter (0..100%) underneath while the passport is tilted.
+/// `edge`: where the box slides in from (.top for the box at the top of the screen, .bottom for the one at the bottom).
 struct LivenessFeedbackView: View {
     let text: String
     let progress: Int
     let showProgress: Bool
+    var edge: Edge = .bottom
 
     @State private var pulse = false
 
     var body: some View {
         let accent = Color(BaseTheme.baseAccentColor)
         let percent = max(0, min(100, progress))
-        let done = percent >= 100
+        let done = showProgress && percent >= 100
 
         if !text.isEmpty || showProgress {
             VStack(spacing: 8) {
@@ -488,7 +505,7 @@ struct LivenessFeedbackView: View {
             .onAppear {
                 withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { pulse = true }
             }
-            .transition(.opacity.combined(with: .move(edge: .bottom)))
+            .transition(.opacity.combined(with: .move(edge: edge)))
         }
     }
 }

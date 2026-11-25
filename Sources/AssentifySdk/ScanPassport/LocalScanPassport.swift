@@ -53,7 +53,7 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
     /// The MRZ reads, one at a time, off the camera queue.
     private let mrzQueue = DispatchQueue(label: "LocalScanPassport.mrz")
 
-    // =============================================================================================
+    // ============================================localLivenessEnabled=================================================
     // Local liveness: fields (the section itself is at the bottom of the class)
     // =============================================================================================
 
@@ -196,6 +196,13 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
     // ---- torch: the back camera (wide angle). Use CameraFeedManager's own device here if it exposes one. ----
     private lazy var torchDevice: AVCaptureDevice? = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
 
+    // ---- local liveness switch ----
+    /// true (default): flat hold -> light -> tilt -> verdict, then the MRZ is read.
+    /// false: the liveness is skipped. The passport is found and held flat (the hold's frames are kept for the MRZ),
+    ///        then the MRZ is read and sent at once. No light, no tilt, no verdict.
+    /// Can be changed at any time; it is applied when the next flat hold ends.
+    public var localLivenessEnabled: Bool = true
+
     init(configModel: ConfigModel!,
          environmentalConditions :EnvironmentalConditions,
          apiKey:String,
@@ -207,7 +214,7 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
         self.apiKey = apiKey;
         self.scanPassportDelegate = scanPassportDelegate;
         self.language = language
-        
+
         modelDataHandler?.customColor = ConstantsValues.DetectColor;
         
         BugsnagObject.initialize(configModel: configModel);
@@ -1127,7 +1134,7 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
         DispatchQueue.main.async {
             self.tiltLayoutView?.removeFromSuperview()              // never two on screen
             do {
-                self.tiltLayoutView = try self.guide.showLbTiltPassportLayout(view: self.view)
+                self.tiltLayoutView = try self.guide.showLbTiltPassportLayout(view: self.view,color:self.environmentalConditions!.HoldHandColor)
             } catch {
                 self.tiltLayoutView = nil                           // no drawing: the text and the meter still guide
                 print("PassportLiveness: tilt drawing not shown: \(error)")
@@ -1197,6 +1204,10 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
         case .baseline:
             if checkBaseline(now) {
                 flatFrame = LocalScanPassport.copyPixelBuffer(pb)   // the flat, unlit frame: MRZ first, then the photo
+                if !localLivenessEnabled {                          // liveness off: no light, no tilt, read the MRZ now
+                    skipLiveness()
+                    break
+                }
                 unlitImg = nil                                      // next frame = the unlit reference
                 enterPhase(.light, now)
                 hint(.doNotMove)
@@ -1633,6 +1644,18 @@ public class LocalScanPassport :UIViewController, CameraSetupDelegate ,LanguageT
             start = false
             notifyLivenessFailed()
         }
+    }
+
+    /// localLivenessEnabled == false: the flat hold is done; no light, no tilt, no verdict. Goes on exactly like a passed
+    /// liveness: the frame stays green and processLiveness reads the MRZ from the flat frame + the hold's frames, then sends.
+    private func skipLiveness() {
+        phase = .done
+        print("LocalPassportLiveness: local liveness OFF (localLivenessEnabled = false): reading the MRZ")
+        setProgress(100)
+        hint(.keepHolding)
+        livenessFrameGood = true
+        livenessPassed = true
+        finalReady = true                                           // processLiveness -> readMrzAndSend()
     }
 
     /// suspected_copy / inconclusive / the camera stalled: the liveness screen (onLivenessUpdate). No server response.

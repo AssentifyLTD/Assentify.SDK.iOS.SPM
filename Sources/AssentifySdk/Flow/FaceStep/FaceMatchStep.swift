@@ -307,27 +307,20 @@ public struct FaceMatchStep: View {
 
             if screenEvent == .idle {
                 VStack {
+                    // ---------- TOP: the instruction (auto and manual), same box as the ID / passport screens ----------
+                    LivenessFeedbackView(
+                        text: feedbackText,
+                        progress: 0,
+                        showProgress: false,                        // the face step has no tilt meter
+                        edge: .top
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 60)                              // under the back / logo row
+
                     Spacer()
-                    if !(assentifySdk?.isManual() ?? false) {
-                        Text(feedbackText)
-                            .foregroundColor(Color(BaseTheme.baseAccentColor))
-                            .font(.system(size: 15, weight: .light))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .padding(.bottom, 40)
-                    } else {
-                        if(!feedbackText.isEmpty){
-                            Text(feedbackText)
-                                .foregroundColor(Color(BaseTheme.baseAccentColor))
-                                .font(.system(size: 15, weight: .light))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .padding(.bottom, 40)
-                        }
-                       
-                        
+
+                    // ---------- BOTTOM: the take-photo button (manual only) ----------
+                    if assentifySdk?.isManual() ?? false {
                         BaseClickButton(
                             title: FlowStrings.takePhoto,
                             cornerRadius: 28,
