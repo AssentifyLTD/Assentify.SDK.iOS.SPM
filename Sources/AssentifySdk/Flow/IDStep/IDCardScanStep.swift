@@ -220,7 +220,7 @@ public struct IDCardScanStep: View {
                         currentMap.merge(filtered) { current, _ in current }
                     }
                     extractedInformation = currentMap
-                    
+                    NfcPassportResponseModelObject.shared.clear();
                     OnCompleteScreenData.shared.clear();
                     OnCompleteScreenData.shared.set(extractedInformation)
 
@@ -359,13 +359,27 @@ public struct IDCardScanStep: View {
             }
 
             if screenEvent == .idle {
+                let isManual = assentifySdk?.isManual() ?? false
                 VStack {
+                    // ---------- TOP: the instruction (whenever the tilt meter is not shown) ----------
+                    if !isManual && !showHoldPopup {               // the instructions start once the popup is closed
+                        LivenessFeedbackView(
+                            text: tiltProgressVisible ? "" : feedbackText,
+                            progress: tiltProgress,
+                            showProgress: false,
+                            edge: .top
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.top, 60)                          // under the back / logo row
+                    }
+
                     Spacer()
                     
-                    if !(assentifySdk?.isManual() ?? false) {
-                        if !showHoldPopup {                         // the instructions start once the popup is closed
+                    if !isManual {
+                        // ---------- BOTTOM: the instruction with the tilt meter (only while the card is tilted) ----------
+                        if !showHoldPopup {
                             LivenessFeedbackView(
-                                text: feedbackText,
+                                text: tiltProgressVisible ? feedbackText : "",
                                 progress: tiltProgress,
                                 showProgress: tiltProgressVisible
                             )
@@ -385,6 +399,7 @@ public struct IDCardScanStep: View {
                         .padding(.vertical, 25)
                     }
                 }
+                .animation(.easeInOut(duration: 0.22), value: tiltProgressVisible)
                 .zIndex(1)
             }
             

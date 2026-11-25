@@ -23,14 +23,18 @@ import Foundation
     public var imageUrl: String?
     public var faces: [String]?
     public var identificationDocumentCapture: IdentificationDocumentCapture?
+    public var barcodeOcrChecked: Bool?
+    public var barcodeOcrMismatch: Bool?
 
-    init(outputProperties: [String: Any]? = nil, transformedProperties: [String: String],extractedData: [String: Any]? = nil, imageUrl: String? = nil, faces: [String]? = nil,identificationDocumentCapture:IdentificationDocumentCapture) {
+    init(outputProperties: [String: Any]? = nil, transformedProperties: [String: String],extractedData: [String: Any]? = nil, imageUrl: String? = nil, faces: [String]? = nil,identificationDocumentCapture:IdentificationDocumentCapture,barcodeOcrChecked: Bool?,barcodeOcrMismatch: Bool?) {
         self.outputProperties = outputProperties
         self.extractedData = extractedData
         self.imageUrl = imageUrl
         self.faces = faces
         self.identificationDocumentCapture = identificationDocumentCapture
         self.transformedProperties = transformedProperties
+        self.barcodeOcrChecked = barcodeOcrChecked
+        self.barcodeOcrMismatch = barcodeOcrMismatch
     }
     
    static func fromJsonString(responseString: String,transformedProperties: [String: String]) -> IDExtractedModel? {
@@ -38,6 +42,9 @@ import Foundation
               let response = try? JSONSerialization.jsonObject(with: responseData, options: []) as? [String: Any] else {
             return nil
         }
+       
+       let barcodeOcrChecked = response["barcode_ocr_checked"] as? Bool?
+       let barcodeOcrMismatch = response["barcode_ocr_mismatch"] as? Bool?
 
         var faces: [String] = []
         if let faceArray = response["faces"] as? [[String: Any]] {
@@ -71,7 +78,7 @@ import Foundation
        }
        
         var  identificationDocumentCapture = fillIdentificationDocumentCapture(outputProperties:outputProperties )
-       return IDExtractedModel(outputProperties: outputProperties,transformedProperties:transformedPropertiesResult, extractedData: extractedData, imageUrl: imageUrl, faces: faces,identificationDocumentCapture:identificationDocumentCapture)
+       return IDExtractedModel(outputProperties: outputProperties,transformedProperties:transformedPropertiesResult, extractedData: extractedData, imageUrl: imageUrl, faces: faces,identificationDocumentCapture:identificationDocumentCapture,barcodeOcrChecked: barcodeOcrChecked ?? false , barcodeOcrMismatch : barcodeOcrMismatch ?? false)
     }
 
 }

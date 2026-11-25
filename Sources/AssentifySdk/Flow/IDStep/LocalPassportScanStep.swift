@@ -251,15 +251,28 @@ public struct LocalPassportScanStep: View {
             
             if screenEvent == .idle && !showHoldPopup {             // the instructions start once the popup is closed
                 VStack {
-                    Spacer()
+                    // ---------- TOP: the instruction (whenever the tilt meter is not shown) ----------
                     LivenessFeedbackView(
-                        text: feedbackText,
+                        text: tiltProgressVisible ? "" : feedbackText,
+                        progress: tiltProgress,
+                        showProgress: false,
+                        edge: .top
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)                              // under the back / logo row
+
+                    Spacer()
+
+                    // ---------- BOTTOM: the instruction with the tilt meter (only while the passport is tilted) ----------
+                    LivenessFeedbackView(
+                        text: tiltProgressVisible ? feedbackText : "",
                         progress: tiltProgress,
                         showProgress: tiltProgressVisible
                     )
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
                 }
+                .animation(.easeInOut(duration: 0.22), value: tiltProgressVisible)
                 .zIndex(1)
             }
             
