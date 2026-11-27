@@ -38,6 +38,59 @@ public class ScanNfc: LanguageTransformationDelegate {
     }
 
 
+    // MARK: - Bugsnag reporting
+
+    /// "iPhone15,2, Version 17.4 (Build 21E219)". No UIKit, so it is safe from any thread.
+    private static let deviceInfo: String = {
+        var sysinfo = utsname()
+        uname(&sysinfo)
+        let machine = withUnsafeBytes(of: &sysinfo.machine) { buffer in
+            String(decoding: buffer.prefix(while: { $0 != 0 }), as: UTF8.self)
+        }
+        return "\(machine), iOS \(ProcessInfo.processInfo.operatingSystemVersionString)"
+    }()
+
+    /// Sends the full error to Bugsnag: where it happened, the message, device info and the
+    /// error details (type, case, NSError domain / code, underlying error).
+    /// Never put personal data in `message` (no names, no document number, no dates).
+    private func reportError(_ location: String, _ message: String, error: Error? = nil, fatal: Bool = true) {
+        var text = "NFC Error  : " + (fatal ? "" : "[non-fatal] ") + "[\(location)] \(message)"
+        text += "\nDevice: \(Self.deviceInfo)"
+        text += "\nNFC available: \(NFCTagReaderSession.readingAvailable)"
+        text += "\nLanguage: \(language ?? "nil")"
+        if let error = error {
+            text += "\n" + describeError(error)
+        }
+        debugLog(text)
+
+        guard let config = configModel else {
+            debugLog("Bugsnag report skipped: configModel is nil")
+            return
+        }
+        BugsnagObject.logInfo(message: text, configModel: config)
+    }
+
+    private func describeError(_ error: Error) -> String {
+        var lines = [
+            "Error type: \(String(reflecting: type(of: error)))",
+            "Error: \(String(describing: error))",
+            "Localized: \(error.localizedDescription)",
+        ]
+        let ns = error as NSError
+        lines.append("NSError: domain=\(ns.domain) code=\(ns.code)")
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? NSError {
+            lines.append("Underlying: domain=\(underlying.domain) code=\(underlying.code) \(underlying.localizedDescription)")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private func isUserCanceled(_ error: Error) -> Bool {
+        if let e = error as? NFCPassportReaderError, case .UserCanceled = e { return true }
+        if let e = error as? NFCReaderError, e.code == .readerSessionInvalidationErrorUserCanceled { return true }
+        return false
+    }
+
+
     // MARK: - Constants
 
     private enum Nfc {
@@ -203,6 +256,9 @@ public class ScanNfc: LanguageTransformationDelegate {
     private var dg1GivenNames: String?
     private var dg1Surname: String?
 
+    /// True once onErrorNfcScan was called for the current read, so it is never called twice
+    private var errorDelivered = false
+
 
     init(configModel: ConfigModel!,
          apiKey: String,
@@ -213,6 +269,12 @@ public class ScanNfc: LanguageTransformationDelegate {
         self.apiKey = apiKey
         self.language = language
         self.scanNfcDelegate = scanNfcDelegate
+
+        if let configModel = configModel {
+            BugsnagObject.initialize(configModel: configModel)
+        } else {
+            debugLog("Bugsnag not initialized: configModel is nil")
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -221,11 +283,22 @@ public class ScanNfc: LanguageTransformationDelegate {
 
 
     public func isNfcAvailable() -> Bool {
-        return NFCTagReaderSession.readingAvailable
+        let available = NFCTagReaderSession.readingAvailable
+        if !available {
+            reportError("isNfcAvailable", "NFC reading is not available on this device", fatal: false)
+        }
+        return available
     }
 
 
     // MARK: - Read
+
+    /// Ends the scan before the chip is read (bad OCR data): report + error callback, never a crash
+    private func failBeforeRead(_ dataModel: PassportResponseModel, _ location: String, _ message: String) {
+        reportError(location, message)
+        errorDelivered = true
+        scanNfcDelegate?.onErrorNfcScan(dataModel: dataModel, message: message)
+    }
 
     public func readPassport(dataModel: PassportResponseModel) async {
         self.passportResponseModel = dataModel
@@ -234,17 +307,36 @@ public class ScanNfc: LanguageTransformationDelegate {
         self.nfcDg13 = nil
         self.dg1GivenNames = nil
         self.dg1Surname = nil
+        self.errorDelivered = false
+
+        // The access key comes from OCR. Missing / bad values fail through the callback, never a crash.
+        let capture = dataModel.passportExtractedModel?.identificationDocumentCapture
+        guard let passportNumber = capture?.Document_Number as? String,
+              !passportNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            failBeforeRead(dataModel, "readPassport", "Invalid MRZ data: document number is missing")
+            return
+        }
+        guard let birthRaw = capture?.Birth_Date as? String,
+              let birthDate = formatDateToMRZ(birthRaw) else {
+            failBeforeRead(dataModel, "readPassport",
+                           "Invalid MRZ data: birth date is missing or not DD/MM/YYYY (length=\((capture?.Birth_Date as? String)?.count ?? -1))")
+            return
+        }
+        guard let expiryRaw = capture?.Expiry_Date as? String,
+              let expiryDate = formatDateToMRZ(expiryRaw) else {
+            failBeforeRead(dataModel, "readPassport",
+                           "Invalid MRZ data: expiry date is missing or not DD/MM/YYYY (length=\((capture?.Expiry_Date as? String)?.count ?? -1))")
+            return
+        }
 
         let passportUtils = PassportUtils()
-        let passportNumber = dataModel.passportExtractedModel?.identificationDocumentCapture?.Document_Number as? String
-        let birthDate = self.formatDateToMRZ((dataModel.passportExtractedModel?.identificationDocumentCapture?.Birth_Date as? String)!)
-        let expiryDate = self.formatDateToMRZ((dataModel.passportExtractedModel?.identificationDocumentCapture?.Expiry_Date as? String)!)
         let mrzKey = passportUtils.getMRZKey(
-            passportNumber: passportNumber!,
+            passportNumber: passportNumber,
             dateOfBirth: birthDate,
             dateOfExpiry: expiryDate)
 
         let reader = PassportReader()
+        let startedAt = Date()
 
         do {
             // DG1 / DG2 are mandatory. DG11 / DG12 / DG13 are optional (only read if listed in EF.COM).
@@ -262,7 +354,18 @@ public class ScanNfc: LanguageTransformationDelegate {
                     case .successfulRead:
                         return "Reading ..."
                     case .error(let error):
-                        self.scanNfcDelegate?.onErrorNfcScan(dataModel: self.passportResponseModel!, message: error.errorDescription!)
+                        let message = error.errorDescription ?? error.localizedDescription
+                        let canceled = self.isUserCanceled(error)
+                        self.reportError(
+                            "readPassport (reader error)",
+                            "\(canceled ? "User canceled" : "NFC read failed") after \(Int(Date().timeIntervalSince(startedAt) * 1000)) ms: \(message)",
+                            error: error,
+                            fatal: !canceled
+                        )
+                        if !self.errorDelivered, let model = self.passportResponseModel {
+                            self.errorDelivered = true
+                            self.scanNfcDelegate?.onErrorNfcScan(dataModel: model, message: message)
+                        }
                         return "Error: \(error.localizedDescription)"
                     default:
                         return nil
@@ -270,24 +373,71 @@ public class ScanNfc: LanguageTransformationDelegate {
                 }
             )
 
+            debugLog("Passport read in \(Int(Date().timeIntervalSince(startedAt) * 1000)) ms")
+
+            if passportModel.chipAuthenticationStatus == .failed {
+                reportError("readPassport", "Chip authentication failed (not fatal)", fatal: false)
+            }
+
             if !passportModel.documentNumber.isEmpty {
                 // Optional groups: never fail the scan because of them
                 readOptionalDataGroups(passportModel)
                 self.nfcScanComplete(nFCPassportModel: passportModel)
+            } else {
+                let message = "NFC read finished but the chip returned no document number (DG1 missing or empty)"
+                reportError("readPassport", message)
+                if !errorDelivered {
+                    errorDelivered = true
+                    scanNfcDelegate?.onErrorNfcScan(dataModel: dataModel, message: message)
+                }
             }
         } catch {
             print(error.localizedDescription)
+            let elapsed = Int(Date().timeIntervalSince(startedAt) * 1000)
+            if errorDelivered {
+                // Already reported from the .error display message
+                debugLog("readPassport threw after the error was delivered: \(error)")
+            } else {
+                let canceled = isUserCanceled(error)
+                reportError(
+                    "readPassport (catch)",
+                    "\(canceled ? "User canceled" : "NFC read threw") after \(elapsed) ms",
+                    error: error,
+                    fatal: !canceled
+                )
+                // A real failure must reach the host app, otherwise the scan hangs silently.
+                // A user cancel keeps the original behavior (no callback).
+                if !canceled {
+                    errorDelivered = true
+                    scanNfcDelegate?.onErrorNfcScan(dataModel: dataModel, message: error.localizedDescription)
+                }
+            }
         }
     }
 
     /// DG11 / DG12 / DG13 are always decoded from the raw TLV bytes (same result as the Android path).
     private func readOptionalDataGroups(_ model: NFCPassportModel) {
-        nfcDg11 = rawBytes(model, .DG11).flatMap { decodeDg11($0) }
-        nfcDg12 = rawBytes(model, .DG12).flatMap { decodeDg12($0) }
+        let dg11Raw = rawBytes(model, .DG11)
+        let dg12Raw = rawBytes(model, .DG12)
+        let dg13Raw = rawBytes(model, .DG13)
+
+        nfcDg11 = dg11Raw.flatMap { decodeDg11($0) }
+        nfcDg12 = dg12Raw.flatMap { decodeDg12($0) }
 
         // DG13 meaning depends on the issuer, so pass the issuing state from DG1
         let issuingState = cleanNfcText(model.issuingAuthority)
-        nfcDg13 = rawBytes(model, .DG13).flatMap { decodeDg13($0, issuingState: issuingState) }
+        nfcDg13 = dg13Raw.flatMap { decodeDg13($0, issuingState: issuingState) }
+
+        // Present on the chip but nothing could be decoded: worth knowing
+        if let raw = dg11Raw, nfcDg11 == nil {
+            reportError("readOptionalDataGroups", "DG11 present (\(raw.count) bytes) but could not be decoded", fatal: false)
+        }
+        if let raw = dg12Raw, nfcDg12 == nil {
+            reportError("readOptionalDataGroups", "DG12 present (\(raw.count) bytes) but could not be decoded", fatal: false)
+        }
+        if let raw = dg13Raw, nfcDg13 == nil {
+            reportError("readOptionalDataGroups", "DG13 present (\(raw.count) bytes, issuer=\(issuingState ?? "nil")) but has no decodable value", fatal: false)
+        }
 
         debugLog("========== DATA GROUPS ==========")
         debugLog("Issuing state (DG1): \(issuingState ?? "nil")")
@@ -307,9 +457,15 @@ public class ScanNfc: LanguageTransformationDelegate {
     /// NFCPassportModel.firstName / lastName are NOT used: once DG11 is read, the library
     /// prefers DG11 "name of holder" (which can be Arabic, e.g. "عمر#محمد") over the MRZ.
     private func readMrz(_ model: NFCPassportModel) -> MrzData? {
-        guard let raw = rawBytes(model, .DG1),
-              let field = fileFields(raw, outerTag: 0x61).first(where: { $0.tag == 0x5F1F }),
-              let text = String(bytes: field.value, encoding: .ascii) else { return nil }
+        guard let raw = rawBytes(model, .DG1) else {
+            reportError("readMrz", "DG1 bytes missing: name / surname cannot be read from the MRZ", fatal: false)
+            return nil
+        }
+        guard let field = fileFields(raw, outerTag: 0x61).first(where: { $0.tag == 0x5F1F }),
+              let text = String(bytes: field.value, encoding: .ascii) else {
+            reportError("readMrz", "DG1 (\(raw.count) bytes) has no readable MRZ (tag 5F1F)", fatal: false)
+            return nil
+        }
 
         let mrz = Array(text.filter { $0 != "\n" && $0 != "\r" })
         func part(_ from: Int, _ to: Int) -> String? {
@@ -329,6 +485,7 @@ public class ScanNfc: LanguageTransformationDelegate {
             nameField = part(60, 90)
             documentNumber = part(5, 14); nationality = part(45, 48); sex = part(37, 38)
         default:
+            reportError("readMrz", "Unknown MRZ length \(mrz.count) (expected 88, 72 or 90)", fatal: false)
             return nil
         }
 
@@ -344,19 +501,27 @@ public class ScanNfc: LanguageTransformationDelegate {
     }
 
 
-    private func formatDateToMRZ(_ dateStr: String) -> String {
-        let parts = dateStr.split(separator: "/")
+    /// "5/3/1990" or "05/03/1990" → "900305". nil when the value is not D/M/YYYY.
+    private func formatDateToMRZ(_ dateStr: String) -> String? {
+        let parts = dateStr.trimmingCharacters(in: .whitespaces).split(separator: "/")
+        guard parts.count == 3 else { return nil }
 
-        let day = parts[0].padding(toLength: 2, withPad: "0", startingAt: 0)
-        let month = parts[1].padding(toLength: 2, withPad: "0", startingAt: 0)
-        let year = parts[2].suffix(2)
+        // Zero-pad on the LEFT: "5" → "05"
+        func pad2(_ s: Substring) -> String {
+            s.count >= 2 ? String(s) : String(repeating: "0", count: 2 - s.count) + s
+        }
+        let day = pad2(parts[0])
+        let month = pad2(parts[1])
+        let year = String(parts[2].suffix(2))
 
-        return "\(year)\(month)\(day)"
+        let result = "\(year)\(month)\(day)"
+        guard result.count == 6, result.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+        return result
     }
 
 
     private func nfcScanComplete(nFCPassportModel: NFCPassportModel) {
-        if let dg2 = nFCPassportModel.dataGroupsRead[.DG2] as? DataGroup2 {
+        if let dg2 = nFCPassportModel.dataGroupsRead[.DG2] as? DataGroup2, !dg2.imageData.isEmpty {
             let byteArray = dg2.imageData
             let faceImageData = Data(byteArray)
 
@@ -370,12 +535,13 @@ public class ScanNfc: LanguageTransformationDelegate {
             )
         } else {
             // No face on the chip: still complete with the chip text data
+            reportError("nfcScanComplete", "DG2 missing or has no face image: completing without the face", fatal: false)
             replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
         }
     }
 
 
-    // MARK: - Upload (unchanged)
+    // MARK: - Upload
 
     private func uploadImage(
         faceImageData: Data,
@@ -383,17 +549,22 @@ public class ScanNfc: LanguageTransformationDelegate {
         nFCPassportModel: NFCPassportModel
     ) {
         guard let config = self.configModel else {
+            // Used to return here without completing, so the scan never finished
+            reportError("uploadImage", "configModel is nil: face upload skipped", fatal: false)
+            self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
             return
         }
 
         let fullPath = "\(config.tenantIdentifier)/\(config.blockIdentifier)/\(config.instanceId)/\(fileName)"
         guard let encodedPath = fullPath.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) else {
+            reportError("uploadImage", "Could not percent-encode the upload path: face upload skipped", fatal: false)
             self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
             return
         }
 
         let baseUrl = "\(BaseUrls.blobUrl)v2/Document/UploadFile/userfiles/\(encodedPath)?skipValidator=true"
         guard let url = URL(string: baseUrl) else {
+            reportError("uploadImage", "Invalid upload URL: face upload skipped", fatal: false)
             self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
             return
         }
@@ -417,39 +588,52 @@ public class ScanNfc: LanguageTransformationDelegate {
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         request.httpBody = body
 
+        debugLog("Uploading face image: \(fileName) (\(faceImageData.count) bytes)")
 
         let task = BlobSession.shared.dataTask(with: request) { data, response, error in
 
-            if error != nil {
+            if let error = error {
+                self.reportError("uploadImage", "Face upload network failure", error: error, fatal: false)
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
 
             guard let httpResponse = response as? HTTPURLResponse else {
+                self.reportError("uploadImage", "Face upload: response is not HTTP (\(String(describing: response)))", fatal: false)
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
 
             guard (200...299).contains(httpResponse.statusCode) else {
+                let errorBody = data.flatMap { String(data: $0.prefix(500), encoding: .utf8) } ?? "nil"
+                self.reportError("uploadImage", "Face upload failed: HTTP \(httpResponse.statusCode), body=\(errorBody)", fatal: false)
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
 
             guard let data = data, !data.isEmpty else {
+                self.reportError("uploadImage", "Face upload succeeded (HTTP \(httpResponse.statusCode)) but the body is empty", fatal: false)
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
 
-            guard let json = try? JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]) else {
+            let json: Any
+            do {
+                json = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
+            } catch {
+                self.reportError("uploadImage", "Face upload response is not valid JSON (\(data.count) bytes)", error: error, fatal: false)
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
 
             guard let dict = json as? [String: Any], let uploadedUrl = dict["url"] as? String else {
+                let keys = (json as? [String: Any]).map { Array($0.keys).sorted() } ?? []
+                self.reportError("uploadImage", "Face upload response has no \"url\" (keys: \(keys))", fatal: false)
                 self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
                 return
             }
 
+            self.debugLog("Face uploaded")
             self.passportResponseModel?.passportExtractedModel?.faces = [uploadedUrl]
             self.replaceDataWithNfcData(nFCPassportModel: nFCPassportModel)
         }
@@ -1059,10 +1243,18 @@ public class ScanNfc: LanguageTransformationDelegate {
             }
         } else {
             debugLog("⚠️ outputProperties is nil: nothing to replace")
+            reportError("replaceDataWithNfcData", "outputProperties is nil: NFC data could not be mapped to the template", fatal: false)
         }
 
         if !unmatchedKeys.isEmpty {
             debugLog("Keys classified as .other (left as OCR): \(unmatchedKeys.map { extractedKey($0) })")
+        }
+
+        // DG1 had no name: the result will have empty name / surname
+        if resolved[.name]?.value == nil || resolved[.surname]?.value == nil {
+            reportError("replaceDataWithNfcData",
+                        "DG1 name or surname is empty (name=\(resolved[.name]?.value != nil), surname=\(resolved[.surname]?.value != nil))",
+                        fatal: false)
         }
 
         // NFC values that exist but have NO key in the template (they cannot appear in the result)
@@ -1082,18 +1274,24 @@ public class ScanNfc: LanguageTransformationDelegate {
         passportResponseModel?.passportExtractedModel?.extractedData = extractedData
 
         if self.language == Language.NON || self.apiKey.isEmpty {
+            if self.language != Language.NON && self.apiKey.isEmpty {
+                reportError("replaceDataWithNfcData", "Language \(self.language ?? "nil") requested but apiKey is empty: translation skipped", fatal: false)
+            }
             debugLogFinal(extractedData, title: "FINAL (no translation)")
             completeScan()
-        } else {
-            debugLog("Sending \(outputProperties.count) properties to translation (\(self.language ?? "nil"))")
+        } else if let language = self.language {
+            debugLog("Sending \(outputProperties.count) properties to translation (\(language))")
             let transformed = LanguageTransformation(apiKey: self.apiKey, languageTransformationDelegate: self)
             transformed.languageTransformation(
-                langauge: self.language!,
+                langauge: language,
                 transformationModel: preparePropertiesToTranslate(
-                    language: self.language!,
-                    properties: self.passportResponseModel!.passportExtractedModel?.outputProperties
+                    language: language,
+                    properties: self.passportResponseModel?.passportExtractedModel?.outputProperties
                 )
             )
+        } else {
+            reportError("replaceDataWithNfcData", "Language is nil: translation skipped", fatal: false)
+            completeScan()
         }
     }
 
@@ -1114,7 +1312,10 @@ public class ScanNfc: LanguageTransformationDelegate {
 
     /// Every successful scan ends here
     private func completeScan() {
-        guard let model = self.passportResponseModel else { return }
+        guard let model = self.passportResponseModel else {
+            reportError("completeScan", "passportResponseModel is nil: onCompleteNfcScan could not be called")
+            return
+        }
         self.scanNfcDelegate?.onCompleteNfcScan(dataModel: model)
     }
 
@@ -1211,6 +1412,9 @@ public class ScanNfc: LanguageTransformationDelegate {
             debugLogFinal(tempExtractedData, title: "FINAL (after translation)")
         } else {
             debugLog("⚠️ Translation returned no properties: keeping NFC values")
+            reportError("onTranslatedSuccess",
+                        "Translation returned no properties (properties nil=\(properties == nil)): keeping NFC values",
+                        fatal: false)
         }
 
         completeScan()
@@ -1218,6 +1422,9 @@ public class ScanNfc: LanguageTransformationDelegate {
 
     public func onTranslatedError(properties: [String: String]?) {
         debugLog("⚠️ Translation failed: keeping NFC values")
+        reportError("onTranslatedError",
+                    "Translation to \(language ?? "nil") failed (\(properties?.count ?? 0) properties returned): keeping NFC values",
+                    fatal: false)
         completeScan()
     }
 }
